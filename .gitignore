@@ -2,6 +2,7 @@
 /node_modules
 /.pnp
 /.env
+.env
 .pnp.js
 .yarn/install-state.gz
 
