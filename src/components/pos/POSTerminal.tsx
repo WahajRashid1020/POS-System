@@ -15,21 +15,19 @@ export function POSTerminal() {
   const [orderType, setOrderType] = useState<OrderType>("dine-in");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
+  const [showCart, setShowCart] = useState(false);
 
-  // Success modal state
   const [successOrder, setSuccessOrder] = useState<{
     orderNumber: number;
     total: number;
     paymentMethod: string;
   } | null>(null);
 
-  // Toast notification
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
 
-  // Auto-hide toast
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 4000);
@@ -37,10 +35,11 @@ export function POSTerminal() {
     }
   }, [toast]);
 
-  // Filter menu items by active category
   const filteredItems = SEED_MENU_ITEMS.filter(
-    (item) => item.category === activeCategory && item.isAvailable
+    (item) => item.category === activeCategory && item.isAvailable,
   ) as MenuItem[];
+
+  const itemCount = cart.reduce((sum, ci) => sum + ci.quantity, 0);
 
   const addToCart = useCallback((item: MenuItem) => {
     setCart((prev) => {
@@ -49,7 +48,7 @@ export function POSTerminal() {
         return prev.map((ci) =>
           ci.menuItem.name === item.name
             ? { ...ci, quantity: ci.quantity + 1 }
-            : ci
+            : ci,
         );
       }
       return [...prev, { menuItem: item, quantity: 1 }];
@@ -62,9 +61,9 @@ export function POSTerminal() {
         .map((ci) =>
           ci.menuItem.name === itemName
             ? { ...ci, quantity: ci.quantity + delta }
-            : ci
+            : ci,
         )
-        .filter((ci) => ci.quantity > 0)
+        .filter((ci) => ci.quantity > 0),
     );
   }, []);
 
@@ -74,9 +73,6 @@ export function POSTerminal() {
 
   const clearCart = useCallback(() => setCart([]), []);
 
-  // =============================================
-  // PLACE ORDER — POST to /api/orders
-  // =============================================
   const handlePlaceOrder = useCallback(
     async (paymentMethod: "cash" | "card") => {
       if (cart.length === 0) return;
@@ -111,13 +107,13 @@ export function POSTerminal() {
 
         const { order } = await res.json();
 
-        // Show success
         setSuccessOrder({
           orderNumber: order.orderNumber,
           total: order.total,
           paymentMethod,
         });
         setCart([]);
+        setShowCart(false);
         setToast({
           message: `Order #${order.orderNumber} placed!`,
           type: "success",
@@ -134,7 +130,7 @@ export function POSTerminal() {
         setIsSubmitting(false);
       }
     },
-    [cart, orderType]
+    [cart, orderType],
   );
 
   return (
@@ -142,24 +138,26 @@ export function POSTerminal() {
       {/* Left side: Menu */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-stone-200 bg-white px-6 py-3">
+        <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white font-bold text-sm">
               QS
             </div>
             <div>
               <h1 className="text-lg font-semibold text-ink">QuickServe</h1>
-              <p className="text-xs text-ink-tertiary">POS Terminal</p>
+              <p className="hidden text-xs text-ink-tertiary sm:block">
+                POS Terminal
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <button
               onClick={() => setShowRecentOrders(!showRecentOrders)}
-              className="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50"
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
             >
-              📋 Recent Orders
+              📋 <span className="hidden sm:inline">Recent Orders</span>
             </button>
-            <div className="flex items-center gap-2 text-sm text-ink-secondary">
+            <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex">
               <div className="h-2 w-2 rounded-full bg-emerald-500" />
               Online
             </div>
@@ -177,22 +175,68 @@ export function POSTerminal() {
         <MenuGrid items={filteredItems} onAddItem={addToCart} />
       </div>
 
-      {/* Right side: Order sidebar */}
-      <OrderSidebar
-        items={cart}
-        orderType={orderType}
-        onChangeOrderType={setOrderType}
-        onUpdateQuantity={updateQuantity}
-        onRemoveItem={removeItem}
-        onClearCart={clearCart}
-        onPlaceOrder={handlePlaceOrder}
-        isSubmitting={isSubmitting}
-      />
+      {/* Desktop sidebar — always visible on lg+ */}
+      <div className="hidden lg:block">
+        <OrderSidebar
+          items={cart}
+          orderType={orderType}
+          onChangeOrderType={setOrderType}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeItem}
+          onClearCart={clearCart}
+          onPlaceOrder={handlePlaceOrder}
+          isSubmitting={isSubmitting}
+        />
+      </div>
 
-      {/* Toast notification */}
+      {/* Mobile cart overlay */}
+      {showCart && (
+        <div className="absolute inset-0 z-30 flex lg:hidden">
+          <div
+            className="flex-1 bg-black/30"
+            onClick={() => setShowCart(false)}
+          />
+          <div className="w-full max-w-[380px]">
+            <OrderSidebar
+              items={cart}
+              orderType={orderType}
+              onChangeOrderType={setOrderType}
+              onUpdateQuantity={updateQuantity}
+              onRemoveItem={removeItem}
+              onClearCart={clearCart}
+              onPlaceOrder={handlePlaceOrder}
+              isSubmitting={isSubmitting}
+              onClose={() => setShowCart(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Floating cart button — mobile only */}
+      <button
+        onClick={() => setShowCart(true)}
+        className="fixed bottom-6 right-6 z-20 flex items-center gap-2 rounded-2xl bg-brand-500 px-5 py-4 text-white shadow-lg shadow-brand-500/30 transition-transform active:scale-95 lg:hidden"
+      >
+        <span className="text-lg">🛒</span>
+        {itemCount > 0 && (
+          <>
+            <span className="text-sm font-bold">{itemCount} items</span>
+            <span className="text-sm font-medium opacity-80">·</span>
+            <span className="text-sm font-bold">
+              €
+              {cart
+                .reduce((s, ci) => s + ci.menuItem.price * ci.quantity, 0)
+                .toFixed(2)}
+            </span>
+          </>
+        )}
+        {itemCount === 0 && <span className="text-sm font-semibold">Cart</span>}
+      </button>
+
+      {/* Toast */}
       {toast && (
         <div
-          className={`absolute left-1/2 top-4 z-50 -translate-x-1/2 rounded-xl px-5 py-3 shadow-lg transition-all ${
+          className={`absolute left-1/2 top-4 z-50 -translate-x-1/2 rounded-xl px-5 py-3 shadow-lg ${
             toast.type === "success"
               ? "bg-emerald-600 text-white"
               : "bg-red-600 text-white"
@@ -211,7 +255,6 @@ export function POSTerminal() {
         </div>
       )}
 
-      {/* Success modal */}
       {successOrder && (
         <OrderSuccessModal
           orderNumber={successOrder.orderNumber}
@@ -221,7 +264,6 @@ export function POSTerminal() {
         />
       )}
 
-      {/* Recent orders slide-over */}
       {showRecentOrders && (
         <RecentOrders onClose={() => setShowRecentOrders(false)} />
       )}

@@ -12,9 +12,10 @@ interface OrderSidebarProps {
   onClearCart: () => void;
   onPlaceOrder: (paymentMethod: "cash" | "card") => void;
   isSubmitting?: boolean;
+  onClose?: () => void;
 }
 
-const TAX_RATE = 0.09; // 9% VAT for takeaway food in Ireland
+const TAX_RATE = 0.09;
 
 const ORDER_TYPES: { value: OrderType; label: string; icon: string }[] = [
   { value: "dine-in", label: "Dine In", icon: "🍽️" },
@@ -31,17 +32,31 @@ export function OrderSidebar({
   onClearCart,
   onPlaceOrder,
   isSubmitting = false,
+  onClose,
 }: OrderSidebarProps) {
   const subtotal = items.reduce(
     (sum, ci) => sum + ci.menuItem.price * ci.quantity,
-    0
+    0,
   );
   const tax = subtotal * TAX_RATE;
   const total = subtotal + tax;
   const itemCount = items.reduce((sum, ci) => sum + ci.quantity, 0);
 
   return (
-    <div className="flex w-[380px] flex-col border-l border-stone-200 bg-white">
+    <div className="flex h-full w-[380px] flex-col border-l border-stone-200 bg-white max-lg:w-full">
+      {/* Mobile close button */}
+      {onClose && (
+        <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 lg:hidden">
+          <h2 className="text-base font-semibold text-ink">Your Order</h2>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-tertiary hover:bg-stone-100"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Order type toggle */}
       <div className="border-b border-stone-200 p-4">
         <div className="flex gap-1 rounded-lg bg-stone-100 p-1">
@@ -53,7 +68,7 @@ export function OrderSidebar({
                 "flex flex-1 items-center justify-center gap-1.5 rounded-md py-2 text-sm font-medium transition-all",
                 orderType === ot.value
                   ? "bg-white text-ink shadow-sm"
-                  : "text-ink-tertiary hover:text-ink-secondary"
+                  : "text-ink-tertiary hover:text-ink-secondary",
               )}
             >
               <span>{ot.icon}</span>
@@ -108,7 +123,6 @@ export function OrderSidebar({
       {/* Totals & place order */}
       {items.length > 0 && (
         <div className="border-t border-stone-200 p-4">
-          {/* Totals */}
           <div className="mb-4 space-y-1.5">
             <div className="flex justify-between text-sm text-ink-secondary">
               <span>Subtotal</span>
@@ -124,7 +138,6 @@ export function OrderSidebar({
             </div>
           </div>
 
-          {/* Payment buttons */}
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => onPlaceOrder("cash")}
@@ -169,7 +182,6 @@ function CartItemRow({
         </p>
       </div>
 
-      {/* Quantity controls */}
       <div className="flex items-center gap-1">
         <button
           onClick={() => onUpdateQuantity(item.menuItem.name, -1)}
@@ -188,12 +200,10 @@ function CartItemRow({
         </button>
       </div>
 
-      {/* Line total */}
       <span className="w-16 text-right text-sm font-semibold text-ink">
         {formatCurrency(lineTotal)}
       </span>
 
-      {/* Remove */}
       <button
         onClick={() => onRemove(item.menuItem.name)}
         className="flex h-6 w-6 items-center justify-center rounded-md text-ink-tertiary transition-colors hover:bg-red-50 hover:text-red-500"

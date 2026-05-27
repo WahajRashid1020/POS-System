@@ -19,7 +19,7 @@ export function MenuGrid({ items, onAddItem }: MenuGridProps) {
 
   return (
     <div className="flex-1 overflow-y-auto p-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {items.map((item) => (
           <MenuItemCard
             key={item.name}
@@ -32,13 +32,7 @@ export function MenuGrid({ items, onAddItem }: MenuGridProps) {
   );
 }
 
-function MenuItemCard({
-  item,
-  onAdd,
-}: {
-  item: MenuItem;
-  onAdd: () => void;
-}) {
+function MenuItemCard({ item, onAdd }: { item: MenuItem; onAdd: () => void }) {
   const isPopular = item.tags?.includes("popular");
 
   return (
