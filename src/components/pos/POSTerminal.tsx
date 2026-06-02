@@ -1,5 +1,5 @@
 "use client";
-
+import { UserMenu } from "@/components/shared/UserMenu";
 import { useState, useCallback, useEffect } from "react";
 import { CategoryTabs } from "./CategoryTabs";
 import { MenuGrid } from "./MenuGrid";
@@ -157,9 +157,12 @@ export function POSTerminal() {
             >
               📋 <span className="hidden sm:inline">Recent Orders</span>
             </button>
-            <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              Online
+            <div className="flex items-center gap-3">
+              <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex">
+                <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                Online
+              </div>
+              <UserMenu />
             </div>
           </div>
         </header>

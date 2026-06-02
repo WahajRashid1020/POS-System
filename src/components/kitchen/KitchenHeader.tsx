@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-
+import { UserMenu } from "@/components/shared/UserMenu";
 type KitchenFilter = "all" | "pending" | "preparing" | "ready";
 
 interface KitchenHeaderProps {
@@ -88,6 +88,7 @@ export function KitchenHeader({
           >
             🔄 Refresh
           </button>
+          <UserMenu />
         </div>
       </div>
 

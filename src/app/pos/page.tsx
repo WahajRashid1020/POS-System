@@ -1,9 +1,12 @@
 import { POSTerminal } from "@/components/pos/POSTerminal";
+import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 
 export default function POSPage() {
   return (
-    <main className="h-screen overflow-hidden bg-surface">
-      <POSTerminal />
-    </main>
+    <ProtectedRoute allowedRoles={["admin", "manager", "cashier"]}>
+      <main className="h-screen overflow-hidden bg-surface">
+        <POSTerminal />
+      </main>
+    </ProtectedRoute>
   );
 }
