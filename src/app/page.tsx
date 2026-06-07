@@ -40,6 +40,17 @@ export default function Home() {
               </p>
             </div>
           </Link>
+
+          <Link
+            href="/reports"
+            className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white px-6 py-4 text-left transition-all hover:border-brand-300 hover:shadow-md"
+          >
+            <span className="text-3xl">📊</span>
+            <div>
+              <p className="font-semibold text-ink">Sales Reports</p>
+              <p className="text-xs text-ink-tertiary">Revenue & insights</p>
+            </div>
+          </Link>
         </div>
       </div>
     </div>

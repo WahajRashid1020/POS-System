@@ -1,5 +1,5 @@
 "use client";
-
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { UserMenu } from "@/components/shared/UserMenu";
@@ -57,6 +57,9 @@ export function KitchenHeader({
     minute: "2-digit",
     second: "2-digit",
   });
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const canViewReports = userRole === "admin" || userRole === "manager";
 
   return (
     <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6">
@@ -82,6 +85,15 @@ export function KitchenHeader({
           >
             ← POS
           </Link>
+          {canViewReports && (
+            <Link
+              href="/reports"
+              className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+            >
+              📊 Reports
+            </Link>
+          )}
+
           <button
             onClick={onRefresh}
             className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"

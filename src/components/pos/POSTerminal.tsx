@@ -8,8 +8,12 @@ import { OrderSuccessModal } from "./OrderSuccessModal";
 import { RecentOrders } from "./RecentOrders";
 import { SEED_CATEGORIES, SEED_MENU_ITEMS } from "@/lib/seed-data";
 import type { CartItem, MenuItem, OrderType } from "@/types";
-
+import { useSession } from "next-auth/react";
+import Link from "next/link";
 export function POSTerminal() {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const canViewReports = userRole === "admin" || userRole === "manager";
   const [activeCategory, setActiveCategory] = useState("burgers");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<OrderType>("dine-in");
@@ -157,6 +161,14 @@ export function POSTerminal() {
             >
               📋 <span className="hidden sm:inline">Recent Orders</span>
             </button>
+            {canViewReports && (
+              <Link
+                href="/reports"
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+              >
+                📊 <span className="hidden sm:inline">Reports</span>
+              </Link>
+            )}
             <div className="flex items-center gap-3">
               <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex">
                 <div className="h-2 w-2 rounded-full bg-emerald-500" />

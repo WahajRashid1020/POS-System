@@ -27,11 +27,11 @@ export function CategoryTabs({
               "touch-target flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
               activeCategory === category.slug
                 ? "bg-brand-500 text-white shadow-sm shadow-brand-500/25"
-                : "bg-stone-100 text-ink-secondary hover:bg-stone-200"
+                : "bg-stone-100 text-ink-secondary hover:bg-stone-200",
             )}
           >
-            <span className="text-base">{category.icon}</span>
-            <span>{category.name}</span>
+            <span className="text-lg sm:text-base">{category.icon}</span>
+            <span className="hidden sm:inline">{category.name}</span>
           </button>
         ))}
     </div>
