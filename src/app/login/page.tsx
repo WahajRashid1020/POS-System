@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 const DEMO_ROLES = [
   {
@@ -9,28 +10,32 @@ const DEMO_ROLES = [
     label: "Admin",
     icon: "👑",
     description: "Full access to everything",
-    color: "border-purple-200 hover:border-purple-400 hover:bg-purple-50",
+    color:
+      "border-purple-200 hover:border-purple-400 hover:bg-purple-50 dark:border-purple-900 dark:hover:border-purple-600 dark:hover:bg-purple-950/30",
   },
   {
     role: "manager",
     label: "Manager",
     icon: "📊",
     description: "POS, kitchen, and reports",
-    color: "border-blue-200 hover:border-blue-400 hover:bg-blue-50",
+    color:
+      "border-blue-200 hover:border-blue-400 hover:bg-blue-50 dark:border-blue-900 dark:hover:border-blue-600 dark:hover:bg-blue-950/30",
   },
   {
     role: "cashier",
     label: "Cashier",
     icon: "💳",
     description: "POS terminal only",
-    color: "border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50",
+    color:
+      "border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-900 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/30",
   },
   {
     role: "kitchen",
     label: "Kitchen",
     icon: "👨‍🍳",
     description: "Kitchen display only",
-    color: "border-amber-200 hover:border-amber-400 hover:bg-amber-50",
+    color:
+      "border-amber-200 hover:border-amber-400 hover:bg-amber-50 dark:border-amber-900 dark:hover:border-amber-600 dark:hover:bg-amber-950/30",
   },
 ];
 
@@ -51,24 +56,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 dark:bg-dark-bg">
+      {/* Theme toggle */}
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-500 text-2xl font-bold text-white shadow-lg shadow-brand-500/25">
             QS
           </div>
-          <h1 className="text-2xl font-bold text-ink">QuickServe POS</h1>
-          <p className="mt-1 text-sm text-ink-secondary">
+          <h1 className="text-2xl font-bold text-ink dark:text-white">
+            QuickServe POS
+          </h1>
+          <p className="mt-1 text-sm text-ink-secondary dark:text-stone-400">
             Sign in to your account
           </p>
         </div>
 
-        {/* Google Login */}
         <button
           onClick={handleGoogleLogin}
           disabled={loading !== null}
-          className="flex w-full items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-sm font-medium text-ink transition-all hover:bg-stone-50 hover:shadow-sm disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3.5 text-sm font-medium text-ink transition-all hover:bg-stone-50 hover:shadow-sm disabled:opacity-50 dark:border-dark-border dark:bg-dark-card dark:text-white dark:hover:bg-dark-hover"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path
@@ -91,39 +101,37 @@ export default function LoginPage() {
           {loading === "google" ? "Signing in..." : "Continue with Google"}
         </button>
 
-        {/* Divider */}
         <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-stone-200" />
-          <span className="text-xs font-medium text-ink-tertiary">
+          <div className="h-px flex-1 bg-stone-200 dark:bg-dark-border" />
+          <span className="text-xs font-medium text-ink-tertiary dark:text-stone-500">
             OR USE A DEMO ACCOUNT
           </span>
-          <div className="h-px flex-1 bg-stone-200" />
+          <div className="h-px flex-1 bg-stone-200 dark:bg-dark-border" />
         </div>
 
-        {/* Demo accounts */}
         <div className="grid grid-cols-2 gap-3">
           {DEMO_ROLES.map((demo) => (
             <button
               key={demo.role}
               onClick={() => handleDemoLogin(demo.role)}
               disabled={loading !== null}
-              className={`flex flex-col items-center gap-1.5 rounded-xl border-2 bg-white p-4 transition-all disabled:opacity-50 ${demo.color}`}
+              className={`flex flex-col items-center gap-1.5 rounded-xl border-2 bg-white p-4 transition-all disabled:opacity-50 dark:bg-dark-card ${demo.color}`}
             >
               <span className="text-2xl">{demo.icon}</span>
-              <span className="text-sm font-semibold text-ink">
+              <span className="text-sm font-semibold text-ink dark:text-white">
                 {demo.label}
               </span>
-              <span className="text-[11px] text-ink-tertiary text-center">
+              <span className="text-[11px] text-ink-tertiary text-center dark:text-stone-500">
                 {demo.description}
               </span>
               {loading === demo.role && (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-brand-500" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-brand-500 " />
               )}
             </button>
           ))}
         </div>
 
-        <p className="mt-6 text-center text-xs text-ink-tertiary">
+        <p className="mt-6 text-center text-xs text-ink-tertiary dark:text-stone-600">
           Demo accounts require no setup. Google login saves your account.
         </p>
       </div>

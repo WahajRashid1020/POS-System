@@ -25,10 +25,12 @@ export function ProtectedRoute({
 
   if (status === "loading") {
     return (
-      <div className="flex h-screen items-center justify-center bg-stone-50">
+      <div className="flex h-screen items-center justify-center bg-stone-50 dark:bg-dark-bg">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500" />
-          <p className="text-sm text-ink-secondary">Loading...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500 dark:border-dark-border dark:border-t-brand-500" />
+          <p className="text-sm text-ink-secondary dark:text-stone-400">
+            Loading...
+          </p>
         </div>
       </div>
     );
@@ -42,11 +44,13 @@ export function ProtectedRoute({
 
   if (!allowedRoles.includes(userRole)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-stone-50">
+      <div className="flex h-screen items-center justify-center bg-stone-50 dark:bg-dark-bg">
         <div className="text-center">
           <span className="text-5xl">🚫</span>
-          <h2 className="mt-4 text-xl font-bold text-ink">Access Denied</h2>
-          <p className="mt-2 text-sm text-ink-secondary">
+          <h2 className="mt-4 text-xl font-bold text-ink dark:text-white">
+            Access Denied
+          </h2>
+          <p className="mt-2 text-sm text-ink-secondary dark:text-stone-400">
             Your role ({userRole}) doesn&apos;t have access to this page.
           </p>
           <button

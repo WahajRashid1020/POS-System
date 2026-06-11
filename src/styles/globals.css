@@ -6,14 +6,27 @@
   :root {
     --background: 0 0% 98%;
     --foreground: 20 14% 10%;
+    --tooltip-bg: #ffffff;
+    --tooltip-border: #e7e5e4;
+    --tooltip-text: #1c1917;
+    --tooltip-cursor: rgba(0, 0, 0, 0.05);
+  }
+
+  .dark {
+    --background: 228 40% 10%;
+    --foreground: 210 40% 95%;
+    --tooltip-bg: #1e2338;
+    --tooltip-border: #2a2f45;
+    --tooltip-text: #e7e5e4;
+    --tooltip-cursor: rgba(255, 255, 255, 0.05);
   }
 
   * {
-    @apply border-stone-200;
+    @apply border-stone-200 dark:border-dark-border;
   }
 
   body {
-    @apply bg-surface text-ink antialiased;
+    @apply bg-surface text-ink antialiased dark:bg-dark-bg dark:text-stone-200;
   }
 }
 
@@ -35,6 +48,10 @@
   background: #d6d3d1;
   border-radius: 3px;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a2f45;
+}
+
 /* Kitchen display animations */
 @keyframes pulse-subtle {
   0%,

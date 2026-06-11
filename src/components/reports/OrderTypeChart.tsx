@@ -18,14 +18,16 @@ export function OrderTypeChart({ data }: OrderTypeChartProps) {
   const hasData = data.some((d) => d.count > 0);
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6">
-      <h3 className="mb-1 text-sm font-semibold text-ink">Order Types</h3>
-      <p className="mb-4 text-xs text-ink-tertiary">
+    <div className="rounded-2xl border border-stone-200 bg-white dark:border-dark-border dark:bg-dark-card p-6">
+      <h3 className="mb-1 text-sm font-semibold text-ink dark:text-white">
+        Order Types
+      </h3>
+      <p className="mb-4 text-xs text-ink-tertiary dark:text-stone-500">
         Distribution by order type
       </p>
 
       {!hasData ? (
-        <p className="py-8 text-center text-sm text-ink-tertiary">
+        <p className="py-8 text-center text-sm text-ink-tertiary dark:text-stone-500">
           No order data yet
         </p>
       ) : (
@@ -73,15 +75,15 @@ export function OrderTypeChart({ data }: OrderTypeChartProps) {
                       className="h-3 w-3 rounded-full"
                       style={{ backgroundColor: COLORS[i % COLORS.length] }}
                     />
-                    <span className="text-sm text-ink">
+                    <span className="text-sm text-ink dark:text-white">
                       {LABELS[d.type] || d.type}
                     </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-ink">
+                    <p className="text-sm font-semibold text-ink dark:text-white">
                       {d.count} orders
                     </p>
-                    <p className="text-xs text-ink-tertiary">
+                    <p className="text-xs text-ink-tertiary dark:text-stone-500">
                       {formatCurrency(d.revenue)}
                     </p>
                   </div>

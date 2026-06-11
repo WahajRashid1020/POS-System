@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: ["class"],
+  darkMode: "class",
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
@@ -19,6 +19,17 @@ const config: Config = {
           900: "#7c2d12",
           950: "#431407",
         },
+        // Dark theme palette (matching your screenshot)
+        dark: {
+          bg: "#0f1221",
+          card: "#171b2e",
+          surface: "#1e2338",
+          border: "#2a2f45",
+          hover: "#252a40",
+          input: "#1a1f33",
+          accent: "#3b5bdb",
+          "accent-hover": "#4c6ef5",
+        },
         surface: {
           DEFAULT: "#fafaf9",
           secondary: "#f5f5f4",
@@ -31,8 +42,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)"],
-        mono: ["var(--font-geist-mono)"],
+        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-geist-mono)", "monospace"],
       },
       borderRadius: {
         lg: "0.75rem",

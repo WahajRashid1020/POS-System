@@ -1,5 +1,6 @@
 "use client";
 import { UserMenu } from "@/components/shared/UserMenu";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useState, useCallback, useEffect } from "react";
 import { CategoryTabs } from "./CategoryTabs";
 import { MenuGrid } from "./MenuGrid";
@@ -142,29 +143,31 @@ export function POSTerminal() {
       {/* Left side: Menu */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 md:px-6">
+        <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 md:px-6 dark:border-dark-border dark:bg-dark-card">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white font-bold text-sm">
               QS
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-ink">QuickServe</h1>
-              <p className="hidden text-xs text-ink-tertiary sm:block">
+              <h1 className="text-lg font-semibold text-ink dark:text-white">
+                QuickServe
+              </h1>
+              <p className="hidden text-xs text-ink-tertiary sm:block dark:text-stone-500">
                 POS Terminal
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-3">
             <button
               onClick={() => setShowRecentOrders(!showRecentOrders)}
-              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
             >
               📋 <span className="hidden sm:inline">Recent Orders</span>
             </button>
             {canViewReports && (
               <Link
                 href="/reports"
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
               >
                 📊 <span className="hidden sm:inline">Reports</span>
               </Link>
@@ -172,13 +175,22 @@ export function POSTerminal() {
             {canViewReports && (
               <Link
                 href="/chat"
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
               >
                 🤖 <span className="hidden sm:inline">AI</span>
               </Link>
             )}
+            {/* {canViewReports && (
+              <Link
+                href="/menu"
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
+              >
+                🍽️ <span className="hidden sm:inline">Menu</span>
+              </Link>
+            )} */}
+            <ThemeToggle />
             <div className="flex items-center gap-3">
-              <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex">
+              <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex dark:text-stone-400">
                 <div className="h-2 w-2 rounded-full bg-emerald-500" />
                 Online
               </div>

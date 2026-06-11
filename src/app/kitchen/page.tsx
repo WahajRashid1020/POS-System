@@ -4,7 +4,7 @@ import { ProtectedRoute } from "@/components/shared/ProtectedRoute";
 export default function KitchenPage() {
   return (
     <ProtectedRoute allowedRoles={["admin", "manager", "kitchen"]}>
-      <main className="h-screen overflow-hidden bg-stone-100">
+      <main className="h-screen overflow-hidden bg-stone-100 dark:bg-dark-bg">
         <KitchenDisplay />
       </main>
     </ProtectedRoute>

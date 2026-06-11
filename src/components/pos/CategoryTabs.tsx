@@ -15,25 +15,27 @@ export function CategoryTabs({
   onSelect,
 }: CategoryTabsProps) {
   return (
-    <div className="flex gap-1 overflow-x-auto border-b border-stone-200 bg-white px-4 py-2 scrollbar-hide">
-      {categories
-        .filter((c) => c.isActive)
-        .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((category) => (
-          <button
-            key={category.slug}
-            onClick={() => onSelect(category.slug)}
-            className={cn(
-              "touch-target flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
-              activeCategory === category.slug
-                ? "bg-brand-500 text-white shadow-sm shadow-brand-500/25"
-                : "bg-stone-100 text-ink-secondary hover:bg-stone-200",
-            )}
-          >
-            <span className="text-lg sm:text-base">{category.icon}</span>
-            <span className="hidden sm:inline">{category.name}</span>
-          </button>
-        ))}
+    <div className="border-b border-stone-200 bg-white dark:border-dark-border dark:bg-dark-card">
+      <div className="flex gap-1.5 overflow-x-auto px-4 py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {categories
+          .filter((c) => c.isActive)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((category) => (
+            <button
+              key={category.slug}
+              onClick={() => onSelect(category.slug)}
+              className={cn(
+                "touch-target flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all",
+                activeCategory === category.slug
+                  ? "bg-brand-500 text-white shadow-sm shadow-brand-500/25"
+                  : "bg-stone-100 text-ink-secondary hover:bg-stone-200 dark:bg-dark-surface dark:text-stone-400 dark:hover:bg-dark-hover",
+              )}
+            >
+              <span className="text-base">{category.icon}</span>
+              <span>{category.name}</span>
+            </button>
+          ))}
+      </div>
     </div>
   );
 }

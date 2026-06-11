@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { UserMenu } from "@/components/shared/UserMenu";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { StatCard } from "./StatCard";
 import { RevenueChart } from "./RevenueChart";
 import { TopItemsChart } from "./TopItemsChart";
@@ -76,40 +77,43 @@ export function ReportsDashboard() {
             📊
           </div>
           <div>
-            <h1 className="text-xl font-bold text-ink">Sales Reports</h1>
-            <p className="text-xs text-ink-tertiary">
+            <h1 className="text-xl font-bold text-ink dark:text-white">
+              Sales Reports
+            </h1>
+            <p className="text-xs text-ink-tertiary dark:text-stone-500">
               Revenue, orders, and insights
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
             href="/pos"
-            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
           >
             ← POS
           </Link>
           <Link
             href="/kitchen"
-            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
           >
             👨‍🍳 Kitchen
           </Link>
+          <ThemeToggle />
           <UserMenu />
         </div>
       </div>
 
       {/* Time range tabs */}
-      <div className="mb-6 flex gap-1.5 overflow-x-auto rounded-xl bg-stone-200/60 p-1">
+      <div className="mb-6 flex gap-1.5 overflow-x-auto rounded-xl bg-stone-200/60 p-1 dark:bg-dark-surface">
         {RANGES.map((r) => (
           <button
             key={r.value}
             onClick={() => setRange(r.value)}
             className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all ${
               range === r.value
-                ? "bg-white text-ink shadow-sm"
-                : "text-ink-secondary hover:text-ink"
+                ? "bg-white text-ink shadow-sm dark:bg-dark-accent dark:text-white"
+                : "text-ink-secondary hover:text-ink dark:text-stone-400 dark:hover:text-white"
             }`}
           >
             {r.label}
@@ -117,20 +121,20 @@ export function ReportsDashboard() {
         ))}
       </div>
 
-      {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500" />
-            <p className="text-sm text-ink-secondary">Loading report...</p>
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500 dark:border-dark-border dark:border-t-brand-500" />
+            <p className="text-sm text-ink-secondary dark:text-stone-400">
+              Loading report...
+            </p>
           </div>
         </div>
       )}
 
-      {/* Error */}
       {error && (
-        <div className="rounded-2xl bg-red-50 p-8 text-center">
-          <p className="font-medium text-red-700">{error}</p>
+        <div className="rounded-2xl bg-red-50 p-8 text-center dark:bg-red-950/30">
+          <p className="font-medium text-red-700 dark:text-red-400">{error}</p>
           <button
             onClick={fetchReport}
             className="mt-3 rounded-lg bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
@@ -140,10 +144,8 @@ export function ReportsDashboard() {
         </div>
       )}
 
-      {/* Dashboard */}
       {!loading && !error && data && (
         <div className="space-y-6">
-          {/* Stat cards */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatCard
               label="Total Revenue"
@@ -175,7 +177,6 @@ export function ReportsDashboard() {
             />
           </div>
 
-          {/* Revenue chart (by hour or by day) */}
           {(range === "today" || range === "yesterday") && (
             <RevenueChart data={data.ordersByHour} />
           )}
@@ -184,7 +185,6 @@ export function ReportsDashboard() {
               <DailyChart data={data.ordersByDay} />
             )}
 
-          {/* Two column layout */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <TopItemsChart data={data.topItems} />
             <CategoryChart data={data.topCategories} />
@@ -196,24 +196,32 @@ export function ReportsDashboard() {
           </div>
 
           {/* Tax summary */}
-          <div className="rounded-2xl border border-stone-200 bg-white p-6">
-            <h3 className="mb-4 text-sm font-semibold text-ink">Tax Summary</h3>
+          <div className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-dark-border dark:bg-dark-card">
+            <h3 className="mb-4 text-sm font-semibold text-ink dark:text-white">
+              Tax Summary
+            </h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <p className="text-xs text-ink-tertiary">Subtotal (ex VAT)</p>
-                <p className="text-lg font-bold text-ink">
+                <p className="text-xs text-ink-tertiary dark:text-stone-500">
+                  Subtotal (ex VAT)
+                </p>
+                <p className="text-lg font-bold text-ink dark:text-white">
                   {formatCurrency(data.summary.totalSubtotal)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-ink-tertiary">VAT Collected (9%)</p>
-                <p className="text-lg font-bold text-ink">
+                <p className="text-xs text-ink-tertiary dark:text-stone-500">
+                  VAT Collected (9%)
+                </p>
+                <p className="text-lg font-bold text-ink dark:text-white">
                   {formatCurrency(data.summary.totalTax)}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-ink-tertiary">Total (inc VAT)</p>
-                <p className="text-lg font-bold text-ink">
+                <p className="text-xs text-ink-tertiary dark:text-stone-500">
+                  Total (inc VAT)
+                </p>
+                <p className="text-lg font-bold text-ink dark:text-white">
                   {formatCurrency(data.summary.totalRevenue)}
                 </p>
               </div>

@@ -5,7 +5,7 @@ import { KitchenHeader } from "./KitchenHeader";
 import { OrderCard } from "./OrderCard";
 import type { Order, OrderStatus } from "@/types";
 
-const POLL_INTERVAL = 5000; // 5 seconds
+const POLL_INTERVAL = 5000;
 
 type KitchenFilter = "all" | "pending" | "preparing" | "ready";
 
@@ -17,14 +17,12 @@ export function KitchenDisplay() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Fetch active orders
   const fetchOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/orders?limit=50");
       if (!res.ok) throw new Error("Failed to fetch orders");
       const data = await res.json();
 
-      // Only show active orders (not completed/cancelled)
       const activeOrders = data.orders.filter(
         (o: Order) =>
           o.status === "pending" ||
@@ -42,14 +40,12 @@ export function KitchenDisplay() {
     }
   }, []);
 
-  // Poll for new orders
   useEffect(() => {
     fetchOrders();
     const interval = setInterval(fetchOrders, POLL_INTERVAL);
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  // Update order status
   const updateStatus = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
       setUpdatingId(orderId);
@@ -62,14 +58,12 @@ export function KitchenDisplay() {
 
         if (!res.ok) throw new Error("Failed to update");
 
-        // Optimistic update
         setOrders((prev) =>
           prev.map((o) =>
             o._id === orderId ? { ...o, status: newStatus } : o,
           ),
         );
 
-        // If completed, remove after a short delay
         if (newStatus === "completed") {
           setTimeout(() => {
             setOrders((prev) => prev.filter((o) => o._id !== orderId));
@@ -77,7 +71,7 @@ export function KitchenDisplay() {
         }
       } catch (err) {
         console.error("Update failed:", err);
-        fetchOrders(); // Re-fetch on error
+        fetchOrders();
       } finally {
         setUpdatingId(null);
       }
@@ -85,11 +79,9 @@ export function KitchenDisplay() {
     [fetchOrders],
   );
 
-  // Filter orders
   const filteredOrders =
     filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
-  // Count by status
   const counts = {
     all: orders.length,
     pending: orders.filter((o) => o.status === "pending").length,
@@ -111,18 +103,22 @@ export function KitchenDisplay() {
         {loading && (
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500" />
-              <p className="text-sm text-ink-secondary">Loading orders...</p>
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500 dark:border-dark-border dark:border-t-brand-500" />
+              <p className="text-sm text-ink-secondary dark:text-stone-400">
+                Loading orders...
+              </p>
             </div>
           </div>
         )}
 
         {error && (
           <div className="flex h-full items-center justify-center">
-            <div className="rounded-2xl bg-red-50 p-8 text-center">
+            <div className="rounded-2xl bg-red-50 p-8 text-center dark:bg-red-950/30">
               <span className="text-4xl">⚠️</span>
-              <p className="mt-3 font-medium text-red-700">{error}</p>
-              <p className="mt-1 text-sm text-red-500">
+              <p className="mt-3 font-medium text-red-700 dark:text-red-400">
+                {error}
+              </p>
+              <p className="mt-1 text-sm text-red-500 dark:text-red-500">
                 Check your database connection
               </p>
               <button
@@ -139,10 +135,10 @@ export function KitchenDisplay() {
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
               <span className="text-6xl">👨‍🍳</span>
-              <p className="mt-4 text-lg font-medium text-ink-secondary">
+              <p className="mt-4 text-lg font-medium text-ink-secondary dark:text-stone-400">
                 {filter === "all" ? "No active orders" : `No ${filter} orders`}
               </p>
-              <p className="mt-1 text-sm text-ink-tertiary">
+              <p className="mt-1 text-sm text-ink-tertiary dark:text-stone-500">
                 New orders will appear here automatically
               </p>
             </div>
@@ -153,14 +149,12 @@ export function KitchenDisplay() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredOrders
               .sort((a, b) => {
-                // Sort: pending first, then preparing, then ready
                 const statusOrder = { pending: 0, preparing: 1, ready: 2 };
                 const aOrder =
                   statusOrder[a.status as keyof typeof statusOrder] ?? 3;
                 const bOrder =
                   statusOrder[b.status as keyof typeof statusOrder] ?? 3;
                 if (aOrder !== bOrder) return aOrder - bOrder;
-                // Within same status, oldest first
                 return (
                   new Date(a.createdAt).getTime() -
                   new Date(b.createdAt).getTime()

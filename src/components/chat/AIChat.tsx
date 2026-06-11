@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { UserMenu } from "@/components/shared/UserMenu";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 
@@ -20,19 +21,14 @@ export function AIChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
-      inputRef.current.style.height = `${Math.min(
-        inputRef.current.scrollHeight,
-        120,
-      )}px`;
+      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 120)}px`;
     }
   }, [input]);
 
@@ -96,16 +92,17 @@ export function AIChat() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Header */}
-      <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6">
+      <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6 dark:border-dark-border dark:bg-dark-card">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600 text-lg">
               🤖
             </div>
             <div>
-              <h1 className="text-lg font-bold text-ink">AI Manager</h1>
-              <p className="text-xs text-ink-tertiary">
+              <h1 className="text-lg font-bold text-ink dark:text-white">
+                AI Manager
+              </h1>
+              <p className="text-xs text-ink-tertiary dark:text-stone-500">
                 Ask anything about your sales data
               </p>
             </div>
@@ -114,37 +111,36 @@ export function AIChat() {
           <div className="flex items-center gap-2">
             <Link
               href="/pos"
-              className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+              className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
             >
               ← POS
             </Link>
             <Link
               href="/reports"
-              className="hidden rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 sm:block"
+              className="hidden rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 sm:block dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
             >
               📊 Reports
             </Link>
+            <ThemeToggle />
             <UserMenu />
           </div>
         </div>
       </header>
 
-      {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-3xl px-4 py-6">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-purple-100">
+              <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-purple-100 dark:bg-purple-900/30">
                 <span className="text-4xl">🤖</span>
               </div>
-              <h2 className="text-xl font-bold text-ink">
+              <h2 className="text-xl font-bold text-ink dark:text-white">
                 Hi! I&apos;m your AI Manager
               </h2>
-              <p className="mt-2 max-w-md text-center text-sm text-ink-secondary">
+              <p className="mt-2 max-w-md text-center text-sm text-ink-secondary dark:text-stone-400">
                 I can answer questions about your sales, revenue, top items,
                 busiest hours, and more. I have access to your real order data.
               </p>
-
               <SuggestedQuestions onSelect={sendMessage} />
             </div>
           )}
@@ -155,10 +151,10 @@ export function AIChat() {
 
           {isLoading && (
             <div className="mb-4 flex items-start gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
                 <span className="text-sm">🤖</span>
               </div>
-              <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 shadow-sm border border-stone-100">
+              <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-3 shadow-sm border border-stone-100 dark:border-dark-border dark:bg-dark-card">
                 <div className="flex items-center gap-1.5">
                   <div
                     className="h-2 w-2 animate-bounce rounded-full bg-purple-400"
@@ -181,20 +177,17 @@ export function AIChat() {
         </div>
       </div>
 
-      {/* Input area */}
-      <div className="border-t border-stone-200 bg-white p-4">
+      <div className="border-t border-stone-200 bg-white p-4 dark:border-dark-border dark:bg-dark-card">
         <div className="mx-auto flex max-w-3xl items-end gap-3">
-          <div className="relative flex-1">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about your sales data..."
-              rows={1}
-              className="w-full resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 pr-12 text-sm text-ink placeholder-ink-tertiary outline-none transition-colors focus:border-purple-300 focus:bg-white focus:ring-2 focus:ring-purple-100"
-            />
-          </div>
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask about your sales data..."
+            rows={1}
+            className="w-full flex-1 resize-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-ink placeholder-ink-tertiary outline-none transition-colors focus:border-purple-300 focus:bg-white focus:ring-2 focus:ring-purple-100 dark:border-dark-border dark:bg-dark-input dark:text-white dark:placeholder-stone-500 dark:focus:border-purple-600 dark:focus:bg-dark-surface dark:focus:ring-purple-900/30"
+          />
           <button
             onClick={() => sendMessage()}
             disabled={!input.trim() || isLoading}
@@ -215,7 +208,7 @@ export function AIChat() {
             </svg>
           </button>
         </div>
-        <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] text-ink-tertiary">
+        <p className="mx-auto mt-2 max-w-3xl text-center text-[11px] text-ink-tertiary dark:text-stone-600">
           Powered by Google Gemini · Answers based on your real order data
         </p>
       </div>

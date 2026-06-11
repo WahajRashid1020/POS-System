@@ -31,9 +31,11 @@ const COLORS = [
 export function TopItemsChart({ data }: TopItemsChartProps) {
   if (data.length === 0) {
     return (
-      <div className="rounded-2xl border border-stone-200 bg-white p-6">
-        <h3 className="mb-4 text-sm font-semibold text-ink">Top Items</h3>
-        <p className="py-8 text-center text-sm text-ink-tertiary">
+      <div className="rounded-2xl border border-stone-200 bg-white dark:border-dark-border dark:bg-dark-card p-6">
+        <h3 className="mb-4 text-sm font-semibold text-ink dark:text-white">
+          Top Items
+        </h3>
+        <p className="py-8 text-center text-sm text-ink-tertiary dark:text-stone-500">
           No order data yet
         </p>
       </div>
@@ -41,9 +43,13 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
   }
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6">
-      <h3 className="mb-1 text-sm font-semibold text-ink">Top Selling Items</h3>
-      <p className="mb-4 text-xs text-ink-tertiary">By quantity sold</p>
+    <div className="rounded-2xl border border-stone-200 bg-white dark:border-dark-border dark:bg-dark-card p-6">
+      <h3 className="mb-1 text-sm font-semibold text-ink dark:text-white">
+        Top Selling Items
+      </h3>
+      <p className="mb-4 text-xs text-ink-tertiary dark:text-stone-500">
+        By quantity sold
+      </p>
 
       <div className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -65,9 +71,18 @@ export function TopItemsChart({ data }: TopItemsChartProps) {
             <Tooltip
               contentStyle={{
                 borderRadius: "12px",
-                border: "1px solid #e7e5e4",
+                border: "1px solid var(--tooltip-border)",
                 fontSize: "13px",
+                backgroundColor: "var(--tooltip-bg)",
+                color: "var(--tooltip-text)",
               }}
+              itemStyle={{
+                color: "#f97316",
+              }}
+              labelStyle={{
+                color: "#3b82f6",
+              }}
+              cursor={{ fill: "var(--tooltip-cursor)" }}
               formatter={(value: number, name: string, props: any) => [
                 `${value} sold (${formatCurrency(props.payload.revenue)})`,
                 "Quantity",

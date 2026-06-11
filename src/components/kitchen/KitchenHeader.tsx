@@ -1,8 +1,11 @@
 "use client";
-import { useSession } from "next-auth/react";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { UserMenu } from "@/components/shared/UserMenu";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
+
 type KitchenFilter = "all" | "pending" | "preparing" | "ready";
 
 interface KitchenHeaderProps {
@@ -22,25 +25,28 @@ const FILTERS: {
   {
     value: "all",
     label: "All",
-    color: "bg-stone-200 text-stone-700",
-    activeColor: "bg-stone-800 text-white",
+    color:
+      "bg-stone-200 text-stone-700 dark:bg-dark-surface dark:text-stone-400",
+    activeColor: "bg-stone-800 text-white dark:bg-white dark:text-dark-bg",
   },
   {
     value: "pending",
     label: "Pending",
-    color: "bg-amber-100 text-amber-700",
+    color:
+      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
     activeColor: "bg-amber-500 text-white",
   },
   {
     value: "preparing",
     label: "Preparing",
-    color: "bg-blue-100 text-blue-700",
+    color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
     activeColor: "bg-blue-600 text-white",
   },
   {
     value: "ready",
     label: "Ready",
-    color: "bg-emerald-100 text-emerald-700",
+    color:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
     activeColor: "bg-emerald-600 text-white",
   },
 ];
@@ -52,43 +58,44 @@ export function KitchenHeader({
   lastUpdated,
   onRefresh,
 }: KitchenHeaderProps) {
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role;
+  const canViewReports = userRole === "admin" || userRole === "manager";
+
   const timeString = lastUpdated.toLocaleTimeString("en-IE", {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
   });
-  const { data: session } = useSession();
-  const userRole = (session?.user as any)?.role;
-  const canViewReports = userRole === "admin" || userRole === "manager";
 
   return (
-    <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6">
+    <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6 dark:border-dark-border dark:bg-dark-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Left: title */}
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-800 text-lg">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-800 text-lg dark:bg-dark-surface">
             👨‍🍳
           </div>
           <div>
-            <h1 className="text-lg font-bold text-ink">Kitchen Display</h1>
-            <p className="text-xs text-ink-tertiary">
+            <h1 className="text-lg font-bold text-ink dark:text-white">
+              Kitchen Display
+            </h1>
+            <p className="text-xs text-ink-tertiary dark:text-stone-500">
               Updated {timeString} · Auto-refreshes every 5s
             </p>
           </div>
         </div>
 
-        {/* Right: nav + refresh */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Link
             href="/pos"
-            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+            className="hidden rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
           >
             ← POS
           </Link>
           {canViewReports && (
             <Link
               href="/reports"
-              className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+              className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
             >
               📊 Reports
             </Link>
@@ -96,23 +103,22 @@ export function KitchenHeader({
           {canViewReports && (
             <Link
               href="/chat"
-              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+              className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
             >
-              🤖 <span className="hidden sm:inline">AI</span>
+              🤖 AI
             </Link>
           )}
-
           <button
             onClick={onRefresh}
-            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50"
+            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm font-medium text-ink-secondary hover:bg-stone-50 dark:border-dark-border dark:text-stone-400 dark:hover:bg-dark-hover"
           >
             🔄 Refresh
           </button>
+          <ThemeToggle />
           <UserMenu />
         </div>
       </div>
 
-      {/* Filter tabs */}
       <div className="mt-3 flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => (
           <button
@@ -129,7 +135,7 @@ export function KitchenHeader({
                 "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[11px] font-bold",
                 filter === f.value
                   ? "bg-white/25 text-white"
-                  : "bg-black/10 text-current",
+                  : "bg-black/10 text-current dark:bg-white/10",
               )}
             >
               {counts[f.value]}

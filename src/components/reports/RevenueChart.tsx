@@ -22,9 +22,11 @@ export function RevenueChart({ data }: RevenueChartProps) {
   });
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6">
-      <h3 className="mb-1 text-sm font-semibold text-ink">Revenue by Hour</h3>
-      <p className="mb-4 text-xs text-ink-tertiary">
+    <div className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-dark-border dark:bg-dark-card">
+      <h3 className="mb-1 text-sm font-semibold text-ink dark:text-white">
+        Revenue by Hour
+      </h3>
+      <p className="mb-4 text-xs text-ink-tertiary dark:text-stone-500">
         Hourly breakdown of orders and revenue
       </p>
 
@@ -66,9 +68,12 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <Tooltip
               contentStyle={{
                 borderRadius: "12px",
-                border: "1px solid #e7e5e4",
+                border: "1px solid var(--tooltip-border)",
                 fontSize: "13px",
+                backgroundColor: "var(--tooltip-bg)",
+                color: "var(--tooltip-text)",
               }}
+              cursor={{ fill: "var(--tooltip-cursor)" }}
               formatter={(value: number, name: string) =>
                 name === "revenue"
                   ? [`€${value.toFixed(2)}`, "Revenue"]
@@ -98,11 +103,13 @@ export function RevenueChart({ data }: RevenueChartProps) {
       <div className="mt-3 flex items-center justify-center gap-6 text-xs">
         <div className="flex items-center gap-1.5">
           <div className="h-2.5 w-2.5 rounded-full bg-brand-500" />
-          <span className="text-ink-secondary">Revenue</span>
+          <span className="text-ink-secondary dark:text-stone-400">
+            Revenue
+          </span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
-          <span className="text-ink-secondary">Orders</span>
+          <span className="text-ink-secondary dark:text-stone-400">Orders</span>
         </div>
       </div>
     </div>

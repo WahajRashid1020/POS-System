@@ -24,9 +24,11 @@ export function DailyChart({ data }: DailyChartProps) {
   }));
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-6">
-      <h3 className="mb-1 text-sm font-semibold text-ink">Daily Revenue</h3>
-      <p className="mb-4 text-xs text-ink-tertiary">
+    <div className="rounded-2xl border border-stone-200 bg-white p-6 dark:border-dark-border dark:bg-dark-card">
+      <h3 className="mb-1 text-sm font-semibold text-ink dark:text-white">
+        Daily Revenue
+      </h3>
+      <p className="mb-4 text-xs text-ink-tertiary dark:text-stone-500">
         Revenue and orders per day
       </p>
 
@@ -49,9 +51,12 @@ export function DailyChart({ data }: DailyChartProps) {
             <Tooltip
               contentStyle={{
                 borderRadius: "12px",
-                border: "1px solid #e7e5e4",
+                border: "1px solid var(--tooltip-border)",
                 fontSize: "13px",
+                backgroundColor: "var(--tooltip-bg)",
+                color: "var(--tooltip-text)",
               }}
+              cursor={{ fill: "var(--tooltip-cursor)" }}
               formatter={(value: number, name: string) =>
                 name === "revenue"
                   ? [`€${value.toFixed(2)}`, "Revenue"]

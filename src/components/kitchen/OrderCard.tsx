@@ -10,21 +10,19 @@ interface OrderCardProps {
   isUpdating: boolean;
 }
 
-const STATUS_CONFIG: Partial<
-  Record<
-    OrderStatus,
-    {
-      border: string;
-      headerBg: string;
-      headerText: string;
-      pulse: boolean;
-      label: string;
-      icon: string;
-    }
-  >
+const STATUS_CONFIG: Record<
+  string,
+  {
+    border: string;
+    headerBg: string;
+    headerText: string;
+    pulse: boolean;
+    label: string;
+    icon: string;
+  }
 > = {
   pending: {
-    border: "border-amber-300",
+    border: "border-amber-300 dark:border-amber-500/50",
     headerBg: "bg-amber-500",
     headerText: "text-white",
     pulse: true,
@@ -32,7 +30,7 @@ const STATUS_CONFIG: Partial<
     icon: "🔔",
   },
   preparing: {
-    border: "border-blue-300",
+    border: "border-blue-300 dark:border-blue-500/50",
     headerBg: "bg-blue-600",
     headerText: "text-white",
     pulse: false,
@@ -40,7 +38,7 @@ const STATUS_CONFIG: Partial<
     icon: "🔥",
   },
   ready: {
-    border: "border-emerald-400",
+    border: "border-emerald-400 dark:border-emerald-500/50",
     headerBg: "bg-emerald-600",
     headerText: "text-white",
     pulse: true,
@@ -54,11 +52,9 @@ export function OrderCard({
   onUpdateStatus,
   isUpdating,
 }: OrderCardProps) {
-  const defaultConfig = STATUS_CONFIG.pending!;
-  const config = STATUS_CONFIG[order.status] ?? defaultConfig;
+  const config = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
   const [elapsed, setElapsed] = useState("");
 
-  // Live elapsed time
   useEffect(() => {
     function update() {
       const created = new Date(order.createdAt).getTime();
@@ -73,14 +69,16 @@ export function OrderCard({
     return () => clearInterval(interval);
   }, [order.createdAt]);
 
-  // Time-based urgency
   const created = new Date(order.createdAt).getTime();
   const minsElapsed = (Date.now() - created) / 60000;
   const isUrgent = order.status === "pending" && minsElapsed > 5;
   const isCritical = order.status === "pending" && minsElapsed > 10;
 
-  // Next action
-  const nextAction: { label: string; status: OrderStatus; color: string } | null =
+  const nextAction: {
+    label: string;
+    status: OrderStatus;
+    color: string;
+  } | null =
     order.status === "pending"
       ? {
           label: "Start Preparing",
@@ -88,28 +86,32 @@ export function OrderCard({
           color: "bg-blue-600 hover:bg-blue-700",
         }
       : order.status === "preparing"
-      ? {
-          label: "Mark Ready",
-          status: "ready",
-          color: "bg-emerald-600 hover:bg-emerald-700",
-        }
-      : order.status === "ready"
-      ? {
-          label: "Complete",
-          status: "completed",
-          color: "bg-stone-700 hover:bg-stone-800",
-        }
-      : null;
+        ? {
+            label: "Mark Ready",
+            status: "ready",
+            color: "bg-emerald-600 hover:bg-emerald-700",
+          }
+        : order.status === "ready"
+          ? {
+              label: "Complete",
+              status: "completed",
+              color:
+                "bg-stone-700 hover:bg-stone-800 dark:bg-stone-600 dark:hover:bg-stone-500",
+            }
+          : null;
 
   return (
     <div
       className={cn(
-        "flex flex-col overflow-hidden rounded-2xl border-2 bg-white shadow-sm transition-all",
+        "flex flex-col overflow-hidden rounded-2xl border-2 bg-white shadow-sm transition-all dark:bg-dark-card",
         config.border,
         config.pulse && "animate-pulse-subtle",
-        isCritical && "ring-2 ring-red-400 ring-offset-2",
-        isUrgent && !isCritical && "ring-2 ring-amber-400 ring-offset-2",
-        isUpdating && "opacity-60"
+        isCritical &&
+          "ring-2 ring-red-400 ring-offset-2 dark:ring-offset-dark-bg",
+        isUrgent &&
+          !isCritical &&
+          "ring-2 ring-amber-400 ring-offset-2 dark:ring-offset-dark-bg",
+        isUpdating && "opacity-60",
       )}
     >
       {/* Header */}
@@ -117,7 +119,7 @@ export function OrderCard({
         className={cn(
           "flex items-center justify-between px-4 py-2.5",
           config.headerBg,
-          config.headerText
+          config.headerText,
         )}
       >
         <div className="flex items-center gap-2">
@@ -132,14 +134,14 @@ export function OrderCard({
       </div>
 
       {/* Order meta */}
-      <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2">
+      <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2 dark:border-dark-border">
         <div className="flex items-center gap-2">
-          <span className="text-sm capitalize text-ink-secondary">
+          <span className="text-sm capitalize text-ink-secondary dark:text-stone-400">
             {order.type === "dine-in"
               ? "🍽️ Dine In"
               : order.type === "takeaway"
-              ? "🛍️ Takeaway"
-              : "🚗 Delivery"}
+                ? "🛍️ Takeaway"
+                : "🚗 Delivery"}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -147,10 +149,10 @@ export function OrderCard({
             className={cn(
               "font-mono text-sm font-bold",
               isCritical
-                ? "text-red-600"
+                ? "text-red-600 dark:text-red-400"
                 : isUrgent
-                ? "text-amber-600"
-                : "text-ink-secondary"
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-ink-secondary dark:text-stone-400",
             )}
           >
             ⏱ {elapsed}
@@ -163,15 +165,15 @@ export function OrderCard({
         <div className="space-y-2">
           {order.items.map((item, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className="flex h-6 min-w-[24px] items-center justify-center rounded-md bg-stone-100 text-xs font-bold text-ink">
+              <span className="flex h-6 min-w-[24px] items-center justify-center rounded-md bg-stone-100 text-xs font-bold text-ink dark:bg-dark-surface dark:text-stone-300">
                 {item.quantity}×
               </span>
               <div className="flex-1">
-                <p className="text-sm font-medium text-ink leading-tight">
+                <p className="text-sm font-medium text-ink leading-tight dark:text-white">
                   {item.menuItem?.name || "Item"}
                 </p>
                 {item.notes && (
-                  <p className="mt-0.5 text-xs text-amber-600">
+                  <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
                     📝 {item.notes}
                   </p>
                 )}
@@ -181,8 +183,8 @@ export function OrderCard({
         </div>
 
         {order.notes && (
-          <div className="mt-3 rounded-lg bg-amber-50 p-2">
-            <p className="text-xs font-medium text-amber-800">
+          <div className="mt-3 rounded-lg bg-amber-50 p-2 dark:bg-amber-900/20">
+            <p className="text-xs font-medium text-amber-800 dark:text-amber-400">
               📝 Note: {order.notes}
             </p>
           </div>
@@ -190,12 +192,12 @@ export function OrderCard({
       </div>
 
       {/* Footer with actions */}
-      <div className="border-t border-stone-100 p-3">
+      <div className="border-t border-stone-100 p-3 dark:border-dark-border">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-ink-tertiary">
+          <span className="text-xs text-ink-tertiary dark:text-stone-500">
             {formatTime(order.createdAt)}
           </span>
-          <span className="text-sm font-bold text-ink">
+          <span className="text-sm font-bold text-ink dark:text-white">
             {formatCurrency(order.total)}
           </span>
         </div>
@@ -207,7 +209,7 @@ export function OrderCard({
               disabled={isUpdating}
               className={cn(
                 "flex-1 rounded-xl py-3 text-sm font-bold text-white transition-all active:scale-[0.97] disabled:opacity-50",
-                nextAction.color
+                nextAction.color,
               )}
             >
               {isUpdating ? "Updating..." : nextAction.label}
@@ -216,7 +218,7 @@ export function OrderCard({
               <button
                 onClick={() => onUpdateStatus(order._id, "cancelled")}
                 disabled={isUpdating}
-                className="rounded-xl bg-red-50 px-3 py-3 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50"
+                className="rounded-xl bg-red-50 px-3 py-3 text-sm font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
               >
                 ✕
               </button>
