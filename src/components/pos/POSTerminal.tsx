@@ -169,6 +169,14 @@ export function POSTerminal() {
                 📊 <span className="hidden sm:inline">Reports</span>
               </Link>
             )}
+            {canViewReports && (
+              <Link
+                href="/chat"
+                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+              >
+                🤖 <span className="hidden sm:inline">AI</span>
+              </Link>
+            )}
             <div className="flex items-center gap-3">
               <div className="hidden items-center gap-2 text-sm text-ink-secondary md:flex">
                 <div className="h-2 w-2 rounded-full bg-emerald-500" />

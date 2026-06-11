@@ -93,6 +93,14 @@ export function KitchenHeader({
               📊 Reports
             </Link>
           )}
+          {canViewReports && (
+            <Link
+              href="/chat"
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-2.5 py-1.5 text-sm font-medium text-ink-secondary transition-colors hover:bg-stone-50 md:gap-2 md:px-3"
+            >
+              🤖 <span className="hidden sm:inline">AI</span>
+            </Link>
+          )}
 
           <button
             onClick={onRefresh}
