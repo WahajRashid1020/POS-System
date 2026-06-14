@@ -12,7 +12,8 @@ import { OrderTypeChart } from "./OrderTypeChart";
 import { PaymentChart } from "./PaymentChart";
 import { CategoryChart } from "./CategoryChart";
 import { DailyChart } from "./DailyChart";
-
+import { Logo } from "@/components/shared/Logo";
+import { ReportsSkeleton } from "@/components/shared/Skeleton";
 type TimeRange = "today" | "yesterday" | "week" | "month" | "all";
 
 interface ReportData {
@@ -73,12 +74,10 @@ export function ReportsDashboard() {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-lg text-white font-bold">
-            📊
-          </div>
+          <Logo size="sm" />
           <div>
-            <h1 className="text-xl font-bold text-ink dark:text-white">
-              Sales Reports
+            <h1 className="text-xl font-bold tracking-tight text-ink dark:text-white">
+              Sales <span className="text-brand-500">Reports</span>
             </h1>
             <p className="text-xs text-ink-tertiary dark:text-stone-500">
               Revenue, orders, and insights
@@ -121,16 +120,7 @@ export function ReportsDashboard() {
         ))}
       </div>
 
-      {loading && (
-        <div className="flex items-center justify-center py-20">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500 dark:border-dark-border dark:border-t-brand-500" />
-            <p className="text-sm text-ink-secondary dark:text-stone-400">
-              Loading report...
-            </p>
-          </div>
-        </div>
-      )}
+      {loading && <ReportsSkeleton />}
 
       {error && (
         <div className="rounded-2xl bg-red-50 p-8 text-center dark:bg-red-950/30">

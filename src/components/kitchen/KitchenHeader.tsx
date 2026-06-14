@@ -1,5 +1,5 @@
 "use client";
-
+import { Logo } from "@/components/shared/Logo";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -72,15 +72,13 @@ export function KitchenHeader({
     <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6 dark:border-dark-border dark:bg-dark-card">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-stone-800 text-lg dark:bg-dark-surface">
-            👨‍🍳
-          </div>
+          <Logo size="sm" />
           <div>
-            <h1 className="text-lg font-bold text-ink dark:text-white">
-              Kitchen Display
+            <h1 className="text-lg font-bold tracking-tight text-ink dark:text-white">
+              Kitchen <span className="text-brand-500">Display</span>
             </h1>
             <p className="text-xs text-ink-tertiary dark:text-stone-500">
-              Updated {timeString} · Auto refreshes every 5s
+              Updated {timeString} · Auto-refreshes every 5s
             </p>
           </div>
         </div>

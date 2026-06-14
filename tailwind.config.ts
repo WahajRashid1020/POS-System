@@ -19,7 +19,6 @@ const config: Config = {
           900: "#7c2d12",
           950: "#431407",
         },
-        // Dark theme palette (matching your screenshot)
         dark: {
           bg: "#0f1221",
           card: "#171b2e",
@@ -42,8 +41,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        sans: ["var(--font-space)", "system-ui", "sans-serif"],
       },
       borderRadius: {
         lg: "0.75rem",

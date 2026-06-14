@@ -1,5 +1,5 @@
 "use client";
-
+import { KitchenCardSkeleton } from "@/components/shared/Skeleton";
 import { useState, useEffect, useCallback } from "react";
 import { KitchenHeader } from "./KitchenHeader";
 import { OrderCard } from "./OrderCard";
@@ -100,16 +100,7 @@ export function KitchenDisplay() {
       />
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        {loading && (
-          <div className="flex h-full items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-brand-500 dark:border-dark-border dark:border-t-brand-500" />
-              <p className="text-sm text-ink-secondary dark:text-stone-400">
-                Loading orders...
-              </p>
-            </div>
-          </div>
-        )}
+        {loading && <KitchenCardSkeleton />}
 
         {error && (
           <div className="flex h-full items-center justify-center">

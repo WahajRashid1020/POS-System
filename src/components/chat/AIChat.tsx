@@ -6,7 +6,7 @@ import { UserMenu } from "@/components/shared/UserMenu";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedQuestions } from "./SuggestedQuestions";
-
+import { Logo } from "@/components/shared/Logo";
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -95,12 +95,10 @@ export function AIChat() {
       <header className="border-b border-stone-200 bg-white px-4 py-3 md:px-6 dark:border-dark-border dark:bg-dark-card">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-600 text-lg">
-              🤖
-            </div>
+            <Logo size="sm" />
             <div>
-              <h1 className="text-lg font-bold text-ink dark:text-white">
-                AI Manager
+              <h1 className="text-lg font-bold tracking-tight text-ink dark:text-white">
+                AI <span className="text-brand-500">Manager</span>
               </h1>
               <p className="text-xs text-ink-tertiary dark:text-stone-500">
                 Ask anything about your sales data

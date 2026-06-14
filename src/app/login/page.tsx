@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { Logo } from "@/components/shared/Logo";
 
 const DEMO_ROLES = [
   {
@@ -57,18 +58,15 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-stone-50 px-4 dark:bg-dark-bg">
-      {/* Theme toggle */}
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
 
       <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-500 text-2xl font-bold text-white shadow-lg shadow-brand-500/25">
-            QS
-          </div>
-          <h1 className="text-2xl font-bold text-ink dark:text-white">
-            QuickServe POS
+        <div className="p-8 flex flex-col items-center">
+          <Logo size="xl" />
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-ink dark:text-white">
+            Quick<span className="text-brand-500">Serve</span>
           </h1>
           <p className="mt-1 text-sm text-ink-secondary dark:text-stone-400">
             Sign in to your account
@@ -125,14 +123,14 @@ export default function LoginPage() {
                 {demo.description}
               </span>
               {loading === demo.role && (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-brand-500 " />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-stone-300 border-t-brand-500" />
               )}
             </button>
           ))}
         </div>
 
-        <p className="mt-6 text-center text-xs text-ink-tertiary dark:text-stone-600">
-          Demo accounts require no setup. Google login saves your account.
+        <p className="m-6 text-center text-xs text-ink-tertiary dark:text-stone-600">
+          Demo accounts require no setup · Google login saves your account
         </p>
       </div>
     </div>

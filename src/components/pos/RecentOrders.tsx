@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { formatCurrency, formatTime } from "@/lib/utils";
 import type { Order, OrderStatus } from "@/types";
+import { OrdersSkeleton } from "../shared/Skeleton";
 
 interface RecentOrdersProps {
   onClose: () => void;
@@ -94,12 +95,7 @@ export function RecentOrders({ onClose }: RecentOrdersProps) {
         </div>
 
         <div className="p-4">
-          {loading && (
-            <div className="flex items-center justify-center py-12 text-ink-tertiary dark:text-stone-500">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-stone-300 border-t-brand-500 dark:border-dark-border dark:border-t-brand-500" />
-              <span className="ml-3 text-sm">Loading orders...</span>
-            </div>
-          )}
+          {loading && <OrdersSkeleton />}
 
           {error && (
             <div className="rounded-xl bg-red-50 p-4 text-center dark:bg-red-950/30">
