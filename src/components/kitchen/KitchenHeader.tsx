@@ -80,7 +80,7 @@ export function KitchenHeader({
               Kitchen Display
             </h1>
             <p className="text-xs text-ink-tertiary dark:text-stone-500">
-              Updated {timeString} · Auto-refreshes every 5s
+              Updated {timeString} · Auto refreshes every 5s
             </p>
           </div>
         </div>
