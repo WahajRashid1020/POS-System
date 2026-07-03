@@ -3,6 +3,7 @@ import { KitchenCardSkeleton } from "@/components/shared/Skeleton";
 import { useState, useEffect, useCallback } from "react";
 import { KitchenHeader } from "./KitchenHeader";
 import { OrderCard } from "./OrderCard";
+import { getOrders, updateOrderStatus } from "@/lib/api";
 import type { Order, OrderStatus } from "@/types";
 
 const POLL_INTERVAL = 5000;
@@ -19,11 +20,9 @@ export function KitchenDisplay() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch("/api/orders?limit=50");
-      if (!res.ok) throw new Error("Failed to fetch orders");
-      const data = await res.json();
+      const data = await getOrders(50);
 
-      const activeOrders = data.orders.filter(
+      const activeOrders = data.filter(
         (o: Order) =>
           o.status === "pending" ||
           o.status === "preparing" ||
@@ -33,8 +32,8 @@ export function KitchenDisplay() {
       setOrders(activeOrders);
       setLastUpdated(new Date());
       setError(null);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch orders");
     } finally {
       setLoading(false);
     }
@@ -50,13 +49,7 @@ export function KitchenDisplay() {
     async (orderId: string, newStatus: OrderStatus) => {
       setUpdatingId(orderId);
       try {
-        const res = await fetch(`/api/orders/${orderId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        });
-
-        if (!res.ok) throw new Error("Failed to update");
+        await updateOrderStatus(orderId, newStatus);
 
         setOrders((prev) =>
           prev.map((o) =>

@@ -9,6 +9,7 @@ import { OrderSidebar } from "./OrderSidebar";
 import { OrderSuccessModal } from "./OrderSuccessModal";
 import { RecentOrders } from "./RecentOrders";
 import { SEED_CATEGORIES, SEED_MENU_ITEMS } from "@/lib/seed-data";
+import { createOrder } from "@/lib/api";
 import type { CartItem, MenuItem, OrderType } from "@/types";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -96,22 +97,11 @@ export function POSTerminal() {
           notes: ci.notes,
         }));
 
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: orderItems,
-            type: orderType,
-            paymentMethod,
-          }),
+        const order = await createOrder({
+          items: orderItems,
+          type: orderType,
+          paymentMethod,
         });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Failed to place order");
-        }
-
-        const { order } = await res.json();
 
         setSuccessOrder({
           orderNumber: order.orderNumber,

@@ -113,3 +113,55 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
 }
+
+// ==========================================
+// API (request/response contracts)
+// ==========================================
+export type ReportRange = "today" | "yesterday" | "week" | "month" | "all";
+
+export interface ReportData {
+  summary: {
+    totalOrders: number;
+    completedOrders: number;
+    totalRevenue: number;
+    totalSubtotal: number;
+    totalTax: number;
+    averageOrderValue: number;
+    avgPrepTime: number;
+  };
+  ordersByHour: { hour: string; orders: number; revenue: number }[];
+  ordersByType: { type: string; count: number; revenue: number }[];
+  ordersByStatus: { status: string; count: number }[];
+  paymentMethods: { method: string; count: number; revenue: number }[];
+  topItems: { name: string; quantity: number; revenue: number }[];
+  topCategories: { category: string; quantity: number; revenue: number }[];
+  ordersByDay: { date: string; orders: number; revenue: number }[];
+  range: string;
+}
+
+export interface GetOrdersResponse {
+  orders: Order[];
+}
+
+export interface OrderResponse {
+  order: Order;
+}
+
+export interface CreateOrderItemInput {
+  menuItem: { name: string; price: number; category: string };
+  quantity: number;
+  price: number;
+  notes?: string;
+}
+
+export interface CreateOrderInput {
+  items: CreateOrderItemInput[];
+  type: OrderType;
+  paymentMethod: "cash" | "card";
+  customerName?: string;
+  notes?: string;
+}
+
+export interface ChatResponse {
+  response: string;
+}

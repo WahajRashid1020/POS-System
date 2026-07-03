@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { formatCurrency, formatTime } from "@/lib/utils";
+import { getOrders, updateOrderStatus } from "@/lib/api";
 import type { Order, OrderStatus } from "@/types";
 import { OrdersSkeleton } from "../shared/Skeleton";
 
@@ -52,12 +53,10 @@ export function RecentOrders({ onClose }: RecentOrdersProps) {
   async function fetchOrders() {
     try {
       setLoading(true);
-      const res = await fetch("/api/orders?limit=20");
-      if (!res.ok) throw new Error("Failed to fetch orders");
-      const data = await res.json();
-      setOrders(data.orders);
-    } catch (err: any) {
-      setError(err.message);
+      const data = await getOrders(20);
+      setOrders(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch orders");
     } finally {
       setLoading(false);
     }
@@ -65,12 +64,7 @@ export function RecentOrders({ onClose }: RecentOrdersProps) {
 
   async function updateStatus(orderId: string, status: OrderStatus) {
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
-      });
-      if (!res.ok) throw new Error("Failed to update order");
+      await updateOrderStatus(orderId, status);
       fetchOrders();
     } catch (err) {
       console.error("Update failed:", err);

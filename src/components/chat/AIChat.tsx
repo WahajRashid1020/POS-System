@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { ChatMessage } from "./ChatMessage";
 import { SuggestedQuestions } from "./SuggestedQuestions";
 import { Logo } from "@/components/shared/Logo";
+import { sendChatMessage } from "@/lib/api";
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -48,32 +49,23 @@ export function AIChat() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageText }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Failed to get response");
-      }
-
-      const data = await res.json();
+      const response = await sendChatMessage(messageText);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.response,
+        content: response,
         timestamp: new Date(),
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    } catch (error: any) {
+    } catch (error) {
+      const errorText =
+        error instanceof Error ? error.message : "Failed to get response";
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `Sorry, I encountered an error: ${error.message}. Please make sure your Gemini API key is set in the environment variables.`,
+        content: `Sorry, I encountered an error: ${errorText}. Please make sure your Gemini API key is set in the environment variables.`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

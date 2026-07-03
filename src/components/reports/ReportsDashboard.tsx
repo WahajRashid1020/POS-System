@@ -14,27 +14,10 @@ import { CategoryChart } from "./CategoryChart";
 import { DailyChart } from "./DailyChart";
 import { Logo } from "@/components/shared/Logo";
 import { ReportsSkeleton } from "@/components/shared/Skeleton";
-type TimeRange = "today" | "yesterday" | "week" | "month" | "all";
+import { getReport } from "@/lib/api";
+import type { ReportData, ReportRange } from "@/types";
 
-interface ReportData {
-  summary: {
-    totalOrders: number;
-    completedOrders: number;
-    totalRevenue: number;
-    totalSubtotal: number;
-    totalTax: number;
-    averageOrderValue: number;
-    avgPrepTime: number;
-  };
-  ordersByHour: { hour: string; orders: number; revenue: number }[];
-  ordersByType: { type: string; count: number; revenue: number }[];
-  ordersByStatus: { status: string; count: number }[];
-  paymentMethods: { method: string; count: number; revenue: number }[];
-  topItems: { name: string; quantity: number; revenue: number }[];
-  topCategories: { category: string; quantity: number; revenue: number }[];
-  ordersByDay: { date: string; orders: number; revenue: number }[];
-  range: string;
-}
+type TimeRange = ReportRange;
 
 const RANGES: { value: TimeRange; label: string }[] = [
   { value: "today", label: "Today" },
@@ -58,12 +41,10 @@ export function ReportsDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/reports?range=${range}`);
-      if (!res.ok) throw new Error("Failed to fetch report");
-      const json = await res.json();
+      const json = await getReport(range);
       setData(json);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch report");
     } finally {
       setLoading(false);
     }
