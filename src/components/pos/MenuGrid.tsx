@@ -6,13 +6,14 @@ import type { MenuItem } from "@/types";
 interface MenuGridProps {
   items: MenuItem[];
   onAddItem: (item: MenuItem) => void;
+  emptyMessage?: string;
 }
 
-export function MenuGrid({ items, onAddItem }: MenuGridProps) {
+export function MenuGrid({ items, onAddItem, emptyMessage }: MenuGridProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-ink-tertiary dark:text-stone-500">
-        <p>No items in this category</p>
+        <p>{emptyMessage ?? "No items in this category"}</p>
       </div>
     );
   }

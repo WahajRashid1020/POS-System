@@ -4,12 +4,14 @@ import { UserMenu } from "@/components/shared/UserMenu";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { useState, useCallback, useEffect } from "react";
 import { CategoryTabs } from "./CategoryTabs";
+import { SearchBar } from "./SearchBar";
 import { MenuGrid } from "./MenuGrid";
 import { OrderSidebar } from "./OrderSidebar";
 import { OrderSuccessModal } from "./OrderSuccessModal";
 import { RecentOrders } from "./RecentOrders";
 import { SEED_CATEGORIES, SEED_MENU_ITEMS } from "@/lib/seed-data";
 import { createOrder } from "@/lib/api";
+import { filterMenuItems } from "@/lib/menu-search";
 import type { CartItem, MenuItem, OrderType } from "@/types";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
@@ -18,6 +20,7 @@ export function POSTerminal() {
   const userRole = (session?.user as any)?.role;
   const canViewReports = userRole === "admin" || userRole === "manager";
   const [activeCategory, setActiveCategory] = useState("burgers");
+  const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orderType, setOrderType] = useState<OrderType>("dine-in");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,9 +45,16 @@ export function POSTerminal() {
     }
   }, [toast]);
 
-  const filteredItems = SEED_MENU_ITEMS.filter(
-    (item) => item.category === activeCategory && item.isAvailable,
+  const filteredItems = filterMenuItems(
+    SEED_MENU_ITEMS,
+    activeCategory,
+    searchQuery,
   ) as MenuItem[];
+
+  const handleSelectCategory = useCallback((slug: string) => {
+    setActiveCategory(slug);
+    setSearchQuery("");
+  }, []);
 
   const itemCount = cart.reduce((sum, ci) => sum + ci.quantity, 0);
 
@@ -178,15 +188,26 @@ export function POSTerminal() {
           </div>
         </header>
 
+        {/* Search bar */}
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
         {/* Category tabs */}
         <CategoryTabs
           categories={SEED_CATEGORIES}
           activeCategory={activeCategory}
-          onSelect={setActiveCategory}
+          onSelect={handleSelectCategory}
         />
 
         {/* Menu grid */}
-        <MenuGrid items={filteredItems} onAddItem={addToCart} />
+        <MenuGrid
+          items={filteredItems}
+          onAddItem={addToCart}
+          emptyMessage={
+            searchQuery.trim()
+              ? `No items match “${searchQuery.trim()}”`
+              : undefined
+          }
+        />
       </div>
 
       {/* Desktop sidebar — always visible on lg+ */}
