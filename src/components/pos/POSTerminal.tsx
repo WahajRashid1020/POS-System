@@ -9,10 +9,12 @@ import { MenuGrid } from "./MenuGrid";
 import { OrderSidebar } from "./OrderSidebar";
 import { OrderSuccessModal } from "./OrderSuccessModal";
 import { RecentOrders } from "./RecentOrders";
+import { CardPaymentModal } from "./CardPaymentModal";
 import { SEED_CATEGORIES, SEED_MENU_ITEMS } from "@/lib/seed-data";
 import { createOrder } from "@/lib/api";
+import { computeOrderTotals } from "@/lib/pricing";
 import { filterMenuItems } from "@/lib/menu-search";
-import type { CartItem, MenuItem, OrderType } from "@/types";
+import type { CartItem, CreateOrderItemInput, MenuItem, OrderType } from "@/types";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 export function POSTerminal() {
@@ -26,6 +28,7 @@ export function POSTerminal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRecentOrders, setShowRecentOrders] = useState(false);
   const [showCart, setShowCart] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
 
   const [successOrder, setSuccessOrder] = useState<{
     orderNumber: number;
@@ -90,27 +93,34 @@ export function POSTerminal() {
 
   const clearCart = useCallback(() => setCart([]), []);
 
-  const handlePlaceOrder = useCallback(
-    async (paymentMethod: "cash" | "card") => {
+  const buildOrderItems = useCallback(
+    (): CreateOrderItemInput[] =>
+      cart.map((ci) => ({
+        menuItem: {
+          name: ci.menuItem.name,
+          price: ci.menuItem.price,
+          category: ci.menuItem.category,
+        },
+        quantity: ci.quantity,
+        price: ci.menuItem.price,
+        notes: ci.notes,
+      })),
+    [cart],
+  );
+
+  // Persist the order. For card orders a verified Stripe PaymentIntent id is
+  // passed through; the server confirms the charge before saving as paid.
+  const finalizeOrder = useCallback(
+    async (paymentMethod: "cash" | "card", paymentIntentId?: string) => {
       if (cart.length === 0) return;
       setIsSubmitting(true);
 
       try {
-        const orderItems = cart.map((ci) => ({
-          menuItem: {
-            name: ci.menuItem.name,
-            price: ci.menuItem.price,
-            category: ci.menuItem.category,
-          },
-          quantity: ci.quantity,
-          price: ci.menuItem.price,
-          notes: ci.notes,
-        }));
-
         const order = await createOrder({
-          items: orderItems,
+          items: buildOrderItems(),
           type: orderType,
           paymentMethod,
+          paymentIntentId,
         });
 
         setSuccessOrder({
@@ -120,23 +130,38 @@ export function POSTerminal() {
         });
         setCart([]);
         setShowCart(false);
+        setShowCardModal(false);
         setToast({
           message: `Order #${order.orderNumber} placed!`,
           type: "success",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Order failed:", error);
         setToast({
           message:
-            error.message ||
-            "Failed to place order. Check your database connection.",
+            error instanceof Error
+              ? error.message
+              : "Failed to place order. Check your database connection.",
           type: "error",
         });
       } finally {
         setIsSubmitting(false);
       }
     },
-    [cart, orderType],
+    [cart.length, orderType, buildOrderItems],
+  );
+
+  // Cash saves immediately; card opens the Stripe payment modal first.
+  const handlePlaceOrder = useCallback(
+    (paymentMethod: "cash" | "card") => {
+      if (cart.length === 0) return;
+      if (paymentMethod === "card") {
+        setShowCardModal(true);
+      } else {
+        finalizeOrder("cash");
+      }
+    },
+    [cart.length, finalizeOrder],
   );
 
   return (
@@ -288,6 +313,23 @@ export function POSTerminal() {
             </button>
           </div>
         </div>
+      )}
+
+      {showCardModal && (
+        <CardPaymentModal
+          items={buildOrderItems()}
+          total={
+            computeOrderTotals(
+              cart.map((ci) => ({
+                price: ci.menuItem.price,
+                quantity: ci.quantity,
+              })),
+            ).total
+          }
+          onCancel={() => setShowCardModal(false)}
+          onPaid={(paymentIntentId) => finalizeOrder("card", paymentIntentId)}
+          onError={(message) => setToast({ message, type: "error" })}
+        />
       )}
 
       {successOrder && (

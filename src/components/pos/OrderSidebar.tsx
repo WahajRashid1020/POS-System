@@ -1,6 +1,7 @@
 "use client";
 
 import { cn, formatCurrency } from "@/lib/utils";
+import { TAX_RATE } from "@/lib/pricing";
 import type { CartItem, OrderType } from "@/types";
 
 interface OrderSidebarProps {
@@ -14,8 +15,6 @@ interface OrderSidebarProps {
   isSubmitting?: boolean;
   onClose?: () => void;
 }
-
-const TAX_RATE = 0.09;
 
 const ORDER_TYPES: { value: OrderType; label: string; icon: string }[] = [
   { value: "dine-in", label: "Dine In", icon: "🍽️" },

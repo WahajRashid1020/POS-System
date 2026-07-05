@@ -25,6 +25,12 @@ const OrderSchema = new Schema(
     tax: { type: Number, required: true },
     total: { type: Number, required: true },
     paymentMethod: { type: String, enum: ["cash", "card", "online"] },
+    paymentStatus: {
+      type: String,
+      enum: ["unpaid", "paid"],
+      default: "unpaid",
+    },
+    paymentIntentId: { type: String },
     customerName: { type: String },
     notes: { type: String },
     completedAt: { type: Date },

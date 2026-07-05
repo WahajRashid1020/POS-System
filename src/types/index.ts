@@ -53,6 +53,8 @@ export interface Order {
   tax: number;
   total: number;
   paymentMethod?: "cash" | "card" | "online";
+  paymentStatus?: "unpaid" | "paid";
+  paymentIntentId?: string;
   customerName?: string;
   notes?: string;
   createdAt: Date;
@@ -158,6 +160,8 @@ export interface CreateOrderInput {
   items: CreateOrderItemInput[];
   type: OrderType;
   paymentMethod: "cash" | "card";
+  /** Stripe PaymentIntent id — required and verified server-side for card orders. */
+  paymentIntentId?: string;
   customerName?: string;
   notes?: string;
 }
