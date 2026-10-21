@@ -32,3 +32,9 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Dummy values so modules that read env at import time can load.
+          # The build never connects to a database.
+          MONGODB_URI: mongodb://localhost:27017/ci
+          NEXTAUTH_SECRET: ci-dummy-secret
+          NEXTAUTH_URL: http://localhost:3000
