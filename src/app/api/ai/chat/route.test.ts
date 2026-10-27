@@ -15,11 +15,15 @@ vi.mock("@/lib/models/Order", () => ({ OrderModel: { find: mocks.find } }));
 vi.mock("@/lib/gemini", () => ({ askGemini: mocks.askGemini }));
 
 import { POST } from "./route";
+import { resetRateLimits } from "@/lib/rate-limit";
 
-function chatRequest(body: unknown): NextRequest {
+function chatRequest(
+  body: unknown,
+  headers: Record<string, string> = {},
+): NextRequest {
   return new NextRequest("http://localhost/api/ai/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
@@ -30,7 +34,9 @@ const asRole = (role: string) =>
 
 beforeEach(() => {
   vi.resetAllMocks();
+  resetRateLimits();
   vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
   mocks.find.mockReturnValue({ lean: () => Promise.resolve([]) });
   mocks.askGemini.mockResolvedValue("Sales look healthy.");
 });
@@ -120,5 +126,44 @@ describe("POST /api/ai/chat — legitimate use still works", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ response: "Sales look healthy." });
     expect(mocks.askGemini.mock.calls[0][0]).toBe("how are sales?");
+  });
+});
+
+describe("POST /api/ai/chat — abuse protection", () => {
+  it("blocks a cross-site request before checking anything else", async () => {
+    asRole("manager");
+    const res = await POST(
+      chatRequest({ message: "hi" }, { "sec-fetch-site": "cross-site" }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(mocks.askGemini).not.toHaveBeenCalled();
+  });
+
+  it("rate limits a user after 10 questions a minute", async () => {
+    mocks.getServerSession.mockResolvedValue({
+      user: { role: "manager", email: "boss@example.com" },
+    });
+
+    for (let i = 0; i < 10; i++) {
+      expect((await POST(chatRequest({ message: "sales?" }))).status).toBe(200);
+    }
+    const blocked = await POST(chatRequest({ message: "sales?" }));
+
+    expect(blocked.status).toBe(429);
+    expect(blocked.headers.get("Retry-After")).toBeTruthy();
+    expect(mocks.askGemini).toHaveBeenCalledTimes(10);
+  });
+
+  it("counts each user separately", async () => {
+    mocks.getServerSession.mockResolvedValue({
+      user: { role: "manager", email: "a@example.com" },
+    });
+    for (let i = 0; i < 10; i++) await POST(chatRequest({ message: "q" }));
+
+    mocks.getServerSession.mockResolvedValue({
+      user: { role: "manager", email: "b@example.com" },
+    });
+    expect((await POST(chatRequest({ message: "q" }))).status).toBe(200);
   });
 });

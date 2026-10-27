@@ -1,5 +1,8 @@
 "use client";
 
+import { Fragment } from "react";
+import { parseBold } from "@/lib/chat-format";
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -29,12 +32,16 @@ export function ChatMessage({ message }: { message: Message }) {
           <div className="space-y-2">
             {message.content.split("\n").map((line, i) => {
               if (!line.trim()) return <br key={i} />;
-              const formatted = line.replace(
-                /\*\*(.*?)\*\*/g,
-                "<strong>$1</strong>",
-              );
               return (
-                <p key={i} dangerouslySetInnerHTML={{ __html: formatted }} />
+                <p key={i}>
+                  {parseBold(line).map((segment, j) =>
+                    segment.bold ? (
+                      <strong key={j}>{segment.text}</strong>
+                    ) : (
+                      <Fragment key={j}>{segment.text}</Fragment>
+                    ),
+                  )}
+                </p>
               );
             })}
           </div>
