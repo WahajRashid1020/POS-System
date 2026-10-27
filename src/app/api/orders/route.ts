@@ -4,45 +4,19 @@ import { OrderModel } from "@/lib/models/Order";
 import { getStripe } from "@/lib/stripe";
 import { computeOrderTotals, toCents } from "@/lib/pricing";
 import { priceOrderItems } from "@/lib/catalog";
-import { requireRole } from "@/lib/api-auth";
-import { rejectCrossOrigin } from "@/lib/csrf";
-import { enforceRateLimit } from "@/lib/rate-limit";
-import { toPublicOrder } from "@/lib/order-response";
-import { createOrderMetaSchema, listOrdersQuerySchema } from "@/lib/validation";
-
-// Everyone on the POS or kitchen screen reads orders; only the POS takes them.
-const READ_ROLES = ["admin", "manager", "cashier", "kitchen"] as const;
-const WRITE_ROLES = ["admin", "manager", "cashier"] as const;
-
-// Internal fields the screens never use, kept out of API responses.
-const ORDER_PROJECTION = { __v: 0, paymentIntentId: 0 };
+import { createOrderMetaSchema } from "@/lib/validation";
 
 // GET /api/orders - list orders with optional status filter
 export async function GET(req: NextRequest) {
-  const auth = await requireRole(READ_ROLES, "GET /api/orders");
-  if (!auth.ok) return auth.response;
-
-  // Kitchen screens poll every few seconds; this only stops runaway scripts.
-  const limited = enforceRateLimit(req, "orders-list", {
-    limit: 120,
-    windowMs: 60_000,
-    userId: auth.userId,
-  });
-  if (limited) return limited;
-
-  const query = listOrdersQuerySchema.safeParse(
-    Object.fromEntries(new URL(req.url).searchParams),
-  );
-  if (!query.success) {
-    return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-  }
-  const { limit, status } = query.data;
-
   try {
     await connectDB();
 
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get("status");
+    const limit = parseInt(searchParams.get("limit") || "50");
+
     const filter = status ? { status } : {};
-    const orders = await OrderModel.find(filter, ORDER_PROJECTION)
+    const orders = await OrderModel.find(filter)
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
@@ -59,21 +33,6 @@ export async function GET(req: NextRequest) {
 
 // POST /api/orders - create new order
 export async function POST(req: NextRequest) {
-  const route = "POST /api/orders";
-
-  const crossOrigin = rejectCrossOrigin(req, route);
-  if (crossOrigin) return crossOrigin;
-
-  const auth = await requireRole(WRITE_ROLES, route);
-  if (!auth.ok) return auth.response;
-
-  const limited = enforceRateLimit(req, "orders-create", {
-    limit: 30,
-    windowMs: 60_000,
-    userId: auth.userId,
-  });
-  if (limited) return limited;
-
   try {
     let body: unknown;
     try {
@@ -160,7 +119,7 @@ export async function POST(req: NextRequest) {
       status: "pending",
     });
 
-    return NextResponse.json({ order: toPublicOrder(order) }, { status: 201 });
+    return NextResponse.json({ order }, { status: 201 });
   } catch (error) {
     console.error("POST /api/orders error:", error);
     return NextResponse.json(
