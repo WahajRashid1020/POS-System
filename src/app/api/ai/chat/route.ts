@@ -197,9 +197,29 @@ Rules:
     return NextResponse.json({ response });
   } catch (error) {
     console.error("AI Chat error:", error);
-    return NextResponse.json(
-      { error: "The AI assistant is unavailable right now" },
-      { status: 500 },
-    );
+    const failure = describeFailure(error);
+    return NextResponse.json({ error: failure.message }, { status: failure.status });
   }
+}
+
+// Gives the user an accurate, safe message. Details stay in the server log.
+function describeFailure(error: unknown): { status: number; message: string } {
+  const status =
+    error instanceof Error && "status" in error && typeof error.status === "number"
+      ? error.status
+      : undefined;
+
+  if (status === 429 || status === 503) {
+    return {
+      status: 503,
+      message: "The AI service is busy right now. Please try again in a moment.",
+    };
+  }
+  if (status === 504) {
+    return {
+      status: 504,
+      message: "The AI took too long to answer. Please try again.",
+    };
+  }
+  return { status: 500, message: "The AI assistant is unavailable right now" };
 }

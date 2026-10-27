@@ -206,3 +206,40 @@ describe("POST /api/ai/chat — abuse protection", () => {
     expect((await POST(chatRequest({ message: "q" }))).status).toBe(200);
   });
 });
+
+describe("POST /api/ai/chat — accurate messages when Gemini fails", () => {
+  const failWith = (message: string, status?: number) =>
+    mocks.askGemini.mockRejectedValue(
+      status === undefined ? new Error(message) : Object.assign(new Error(message), { status }),
+    );
+
+  it.each([503, 429])("says the service is busy (and returns 503) when Gemini answers %i", async (status) => {
+    asRole("manager");
+    failWith(`Gemini API error (${status})`, status);
+    const res = await POST(chatRequest({ message: "how are sales?" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(503);
+    expect(body.error).toMatch(/busy/i);
+    expect(JSON.stringify(body)).not.toContain(String(status));
+  });
+
+  it("reports a timeout as 504", async () => {
+    asRole("manager");
+    failWith("Gemini took too long to respond", 504);
+    const res = await POST(chatRequest({ message: "how are sales?" }));
+
+    expect(res.status).toBe(504);
+    expect((await res.json()).error).toMatch(/too long/i);
+  });
+
+  it("keeps a generic message for anything else, with no key or internals", async () => {
+    asRole("manager");
+    failWith("Gemini API error (403)", 403);
+    const res = await POST(chatRequest({ message: "how are sales?" }));
+    const text = await res.text();
+
+    expect(res.status).toBe(500);
+    expect(text).not.toMatch(/api key|403/i);
+  });
+});
