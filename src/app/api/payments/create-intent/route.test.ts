@@ -1,29 +1,43 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const mocks = vi.hoisted(() => ({ create: vi.fn() }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), getServerSession: vi.fn() }));
 
+vi.mock("next-auth", () => ({ getServerSession: mocks.getServerSession }));
+vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/stripe", () => ({
   getStripe: () => ({ paymentIntents: { create: mocks.create } }),
 }));
 
 import { POST } from "./route";
+import { resetRateLimits } from "@/lib/rate-limit";
+
+const asRole = (role: string) =>
+  mocks.getServerSession.mockResolvedValue({
+    user: { role, email: `${role}@example.com` },
+  });
 
 function line(name: string, quantity: unknown, price: unknown) {
   return { menuItem: { name, price, category: "x" }, quantity, price };
 }
 
-function postRequest(body: unknown): NextRequest {
+function postRequest(
+  body: unknown,
+  headers: Record<string, string> = {},
+): NextRequest {
   return new NextRequest("http://localhost/api/payments/create-intent", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
 
 beforeEach(() => {
   vi.resetAllMocks();
+  resetRateLimits();
   vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  asRole("cashier");
   mocks.create.mockResolvedValue({ client_secret: "secret_abc" });
 });
 
@@ -101,5 +115,47 @@ describe("POST /api/payments/create-intent — legitimate use still works", () =
         payment_method_types: ["card"],
       }),
     );
+  });
+});
+
+describe("POST /api/payments/create-intent — access control and abuse protection", () => {
+  const validBody = () => postRequest({ items: [line("Coke", 1, 1.8)] });
+
+  it("rejects anonymous callers without creating a Stripe object", async () => {
+    mocks.getServerSession.mockResolvedValue(null);
+    const res = await POST(validBody());
+
+    expect(res.status).toBe(401);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("forbids the kitchen role", async () => {
+    asRole("kitchen");
+    const res = await POST(validBody());
+
+    expect(res.status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it.each(["admin", "manager", "cashier"])("lets a %s open a payment", async (role) => {
+    asRole(role);
+    expect((await POST(validBody())).status).toBe(200);
+  });
+
+  it("blocks a cross-site request", async () => {
+    const res = await POST(
+      postRequest({ items: [line("Coke", 1, 1.8)] }, { "sec-fetch-site": "cross-site" }),
+    );
+
+    expect(res.status).toBe(403);
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("rate limits to 30 a minute so Stripe can't be spammed", async () => {
+    for (let i = 0; i < 30; i++) await POST(validBody());
+    const res = await POST(validBody());
+
+    expect(res.status).toBe(429);
+    expect(mocks.create).toHaveBeenCalledTimes(30);
   });
 });

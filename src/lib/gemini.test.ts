@@ -143,3 +143,101 @@ describe("askGemini — slow responses", () => {
     await expect(askGemini("hello")).rejects.toThrow("network down");
   });
 });
+
+describe("askGemini — falls back to another model when one is out of quota or busy", () => {
+  const modelOf = (call: unknown[]) =>
+    String(call[0]).match(/models\/([^:]+):/)?.[1];
+
+  it("uses the main model when it works", async () => {
+    const { askGemini } = await loadGemini();
+    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await askGemini("hello");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(modelOf(fetchMock.mock.calls[0])).toBe("gemini-3.5-flash");
+  });
+
+  it.each([429, 503, 404, 500])(
+    "moves to the next model when the first answers %i",
+    async (status) => {
+      const { askGemini } = await loadGemini();
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce(errorResponse(status, "problem"))
+        .mockResolvedValueOnce(okResponse());
+      vi.stubGlobal("fetch", fetchMock);
+
+      await expect(askGemini("hello")).resolves.toBe("hi");
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(modelOf(fetchMock.mock.calls[0])).toBe("gemini-3.5-flash");
+      expect(modelOf(fetchMock.mock.calls[1])).toBe("gemini-3-flash-preview");
+    },
+  );
+
+  it("walks the whole chain and reports the last status when every model fails", async () => {
+    const { askGemini } = await loadGemini();
+    const fetchMock = vi.fn().mockResolvedValue(errorResponse(503, "high demand"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const err = await askGemini("hello").catch((e: unknown) => e);
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls.map(modelOf)).toEqual([
+      "gemini-3.5-flash",
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-lite",
+    ]);
+    expect((err as Error & { status: number }).status).toBe(503);
+  });
+
+  it("stops at once on a rejected key (403): other models would fail too", async () => {
+    const { askGemini } = await loadGemini();
+    const fetchMock = vi.fn().mockResolvedValue(errorResponse(403, "bad key"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const err = await askGemini("hello").catch((e: unknown) => e);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((err as Error & { status: number }).status).toBe(403);
+  });
+
+  it("stops on a bad request (400)", async () => {
+    const { askGemini } = await loadGemini();
+    const fetchMock = vi.fn().mockResolvedValue(errorResponse(400, "bad request"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await askGemini("hello").catch(() => undefined);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets GEMINI_MODEL choose the first model without duplicating the fallbacks", async () => {
+    vi.resetModules();
+    vi.stubEnv("GEMINI_API_KEY", API_KEY);
+    vi.stubEnv("GEMINI_MODEL", "gemini-3-flash-preview");
+    const { askGemini } = await import("./gemini");
+    const fetchMock = vi.fn().mockResolvedValue(errorResponse(503, "busy"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await askGemini("hello").catch(() => undefined);
+
+    expect(fetchMock.mock.calls.map(modelOf)).toEqual([
+      "gemini-3-flash-preview",
+      "gemini-3.1-flash-lite",
+    ]);
+  });
+
+  it("marks a timeout with status 504 and does not keep trying", async () => {
+    const { askGemini } = await loadGemini();
+    const timeout = Object.assign(new Error("timed out"), { name: "TimeoutError" });
+    const fetchMock = vi.fn().mockRejectedValue(timeout);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const err = await askGemini("hello").catch((e: unknown) => e);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect((err as Error & { status: number }).status).toBe(504);
+  });
+});

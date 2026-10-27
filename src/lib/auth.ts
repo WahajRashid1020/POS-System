@@ -4,6 +4,21 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { connectDB } from "./db";
 import { UserModel } from "./models/User";
 
+// The demo accounts need no password, so anyone who can reach this login can
+// pick any role. They are off unless explicitly enabled (local dev, or a
+// throwaway demo deployment with a test database and Stripe test keys).
+// NEXT_PUBLIC_ so the login page can hide the demo buttons when it is off.
+export const DEMO_LOGIN_ENABLED =
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true";
+
+interface DemoAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  image: null;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -11,7 +26,7 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     // Demo accounts for testing without Google OAuth
-    CredentialsProvider({
+    ...(DEMO_LOGIN_ENABLED ? [CredentialsProvider({
       name: "Demo Account",
       credentials: {
         role: { label: "Role", type: "text" },
@@ -19,7 +34,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const role = credentials?.role || "cashier";
 
-        const demoAccounts: Record<string, any> = {
+        const demoAccounts: Record<string, DemoAccount> = {
           admin: {
             id: "demo-admin",
             name: "Admin User",
@@ -52,7 +67,7 @@ export const authOptions: NextAuthOptions = {
 
         return demoAccounts[role] || null;
       },
-    }),
+    })] : []),
   ],
   callbacks: {
     async signIn({ user, account }) {
@@ -123,6 +138,9 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    // A shift's worth: staff sign in again each day instead of staying
+    // signed in for the 30-day default.
+    maxAge: 12 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
 };

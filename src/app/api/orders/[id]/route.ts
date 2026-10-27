@@ -2,17 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { OrderModel } from "@/lib/models/Order";
 import { requireRole } from "@/lib/api-auth";
+import { rejectCrossOrigin } from "@/lib/csrf";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { OBJECT_ID_PATTERN, updateOrderSchema } from "@/lib/validation";
 
 const ORDER_ROLES = ["admin", "manager", "cashier", "kitchen"] as const;
+
+// Internal fields the screens never use, kept out of API responses.
+const ORDER_PROJECTION = { __v: 0, paymentIntentId: 0 };
 
 // PATCH /api/orders/[id] - update order status
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireRole(ORDER_ROLES);
+  const route = "PATCH /api/orders/[id]";
+
+  const crossOrigin = rejectCrossOrigin(req, route);
+  if (crossOrigin) return crossOrigin;
+
+  const auth = await requireRole(ORDER_ROLES, route);
   if (!auth.ok) return auth.response;
+
+  // Generous: the kitchen taps through many orders, but a script shouldn't.
+  const limited = enforceRateLimit(req, "order-update", {
+    limit: 120,
+    windowMs: 60_000,
+    userId: auth.userId,
+  });
+  if (limited) return limited;
 
   try {
     const { id } = await params;
@@ -48,6 +66,7 @@ export async function PATCH(
     const order = await OrderModel.findByIdAndUpdate(id, update, {
       new: true,
       runValidators: true,
+      projection: ORDER_PROJECTION,
     }).lean();
 
     if (!order) {
@@ -69,7 +88,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireRole(ORDER_ROLES);
+  const auth = await requireRole(ORDER_ROLES, "GET /api/orders/[id]");
   if (!auth.ok) return auth.response;
 
   try {
@@ -80,7 +99,7 @@ export async function GET(
 
     await connectDB();
 
-    const order = await OrderModel.findById(id).lean();
+    const order = await OrderModel.findById(id, ORDER_PROJECTION).lean();
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });

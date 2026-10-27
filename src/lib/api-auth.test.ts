@@ -36,10 +36,30 @@ describe("requireRole", () => {
     if (!result.ok) expect(result.response.status).toBe(403);
   });
 
-  it("returns the role when it is allowed", async () => {
-    mocks.getServerSession.mockResolvedValue({ user: { role: "manager" } });
+  it("returns the role and a user key when it is allowed", async () => {
+    mocks.getServerSession.mockResolvedValue({
+      user: { role: "manager", email: "m@example.com" },
+    });
     const result = await requireRole(["admin", "manager"]);
 
-    expect(result).toEqual({ ok: true, role: "manager" });
+    expect(result).toEqual({ ok: true, role: "manager", userId: "m@example.com" });
+  });
+
+  it("logs auth failures without any personal data", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    mocks.getServerSession.mockResolvedValue(null);
+    await requireRole(["admin"], "POST /api/test");
+    mocks.getServerSession.mockResolvedValue({
+      user: { role: "cashier", email: "secret@example.com" },
+    });
+    await requireRole(["admin"], "POST /api/test");
+
+    const lines = warn.mock.calls.map((c) => String(c[0]));
+    expect(lines[0]).toContain('"event":"auth.unauthenticated"');
+    expect(lines[1]).toContain('"event":"auth.forbidden"');
+    expect(lines[1]).toContain('"role":"cashier"');
+    expect(lines.join("")).not.toContain("secret@example.com");
+    warn.mockRestore();
   });
 });

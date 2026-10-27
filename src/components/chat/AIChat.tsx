@@ -65,7 +65,7 @@ export function AIChat() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `Sorry, I encountered an error: ${errorText}. Please make sure your Gemini API key is set in the environment variables.`,
+        content: `Sorry, I encountered an error: ${errorText}`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);

@@ -3,15 +3,30 @@ import { connectDB } from "@/lib/db";
 import { OrderModel } from "@/lib/models/Order";
 import { askGemini } from "@/lib/gemini";
 import { requireRole } from "@/lib/api-auth";
+import { rejectCrossOrigin } from "@/lib/csrf";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { chatRequestSchema } from "@/lib/validation";
 
 // Gemini plus the database can take longer than the 10s serverless default.
 export const maxDuration = 30;
 
+const ROUTE = "POST /api/ai/chat";
+
 export async function POST(req: NextRequest) {
+  const crossOrigin = rejectCrossOrigin(req, ROUTE);
+  if (crossOrigin) return crossOrigin;
+
   // Sales analytics are manager/admin only — matches the /chat page guard.
-  const auth = await requireRole(["admin", "manager"]);
+  const auth = await requireRole(["admin", "manager"], ROUTE);
   if (!auth.ok) return auth.response;
+
+  // Each call spends Gemini quota, so keep a tight per-user limit.
+  const limited = enforceRateLimit(req, "ai-chat", {
+    limit: 10,
+    windowMs: 60_000,
+    userId: auth.userId,
+  });
+  if (limited) return limited;
 
   try {
     let body: unknown;
@@ -182,9 +197,29 @@ Rules:
     return NextResponse.json({ response });
   } catch (error) {
     console.error("AI Chat error:", error);
-    return NextResponse.json(
-      { error: "The AI assistant is unavailable right now" },
-      { status: 500 },
-    );
+    const failure = describeFailure(error);
+    return NextResponse.json({ error: failure.message }, { status: failure.status });
   }
+}
+
+// Gives the user an accurate, safe message. Details stay in the server log.
+function describeFailure(error: unknown): { status: number; message: string } {
+  const status =
+    error instanceof Error && "status" in error && typeof error.status === "number"
+      ? error.status
+      : undefined;
+
+  if (status === 429 || status === 503) {
+    return {
+      status: 503,
+      message: "The AI service is busy right now. Please try again in a moment.",
+    };
+  }
+  if (status === 504) {
+    return {
+      status: 504,
+      message: "The AI took too long to answer. Please try again.",
+    };
+  }
+  return { status: 500, message: "The AI assistant is unavailable right now" };
 }
