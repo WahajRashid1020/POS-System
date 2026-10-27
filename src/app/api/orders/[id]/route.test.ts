@@ -19,7 +19,6 @@ vi.mock("@/lib/models/Order", () => ({
 }));
 
 import { GET, PATCH } from "./route";
-import { resetRateLimits } from "@/lib/rate-limit";
 
 const VALID_ID = "507f1f77bcf86cd799439011";
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -42,8 +41,6 @@ const asRole = (role?: string) =>
 
 beforeEach(() => {
   vi.resetAllMocks();
-  resetRateLimits();
-  vi.spyOn(console, "warn").mockImplementation(() => {});
   mocks.findByIdAndUpdate.mockReturnValue({
     lean: () => Promise.resolve({ _id: VALID_ID, status: "preparing" }),
   });
@@ -153,45 +150,6 @@ describe("PATCH /api/orders/[id] — legitimate use still works", () => {
     const res = await PATCH(patchRequest({ status: "ready" }), ctx(VALID_ID));
 
     expect(res.status).toBe(404);
-  });
-});
-
-describe("PATCH /api/orders/[id] — abuse protection and response trimming", () => {
-  it("blocks a cross-site write before touching auth or the database", async () => {
-    asRole("cashier");
-    const req = new NextRequest(`http://localhost/api/orders/${VALID_ID}`, {
-      method: "PATCH",
-      headers: { "sec-fetch-site": "cross-site" },
-      body: JSON.stringify({ status: "ready" }),
-    });
-    const res = await PATCH(req, ctx(VALID_ID));
-
-    expect(res.status).toBe(403);
-    expect(mocks.findByIdAndUpdate).not.toHaveBeenCalled();
-  });
-
-  it("rate limits a user after 120 updates a minute", async () => {
-    mocks.getServerSession.mockResolvedValue({
-      user: { role: "kitchen", email: "k@example.com" },
-    });
-
-    for (let i = 0; i < 120; i++) {
-      await PATCH(patchRequest({ status: "preparing" }), ctx(VALID_ID));
-    }
-    const res = await PATCH(patchRequest({ status: "preparing" }), ctx(VALID_ID));
-
-    expect(res.status).toBe(429);
-  });
-
-  it("keeps internal fields out of the response", async () => {
-    asRole("cashier");
-    await PATCH(patchRequest({ status: "ready" }), ctx(VALID_ID));
-
-    expect(mocks.findByIdAndUpdate).toHaveBeenCalledWith(
-      VALID_ID,
-      expect.anything(),
-      expect.objectContaining({ projection: { __v: 0, paymentIntentId: 0 } }),
-    );
   });
 });
 

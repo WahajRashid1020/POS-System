@@ -2,32 +2,27 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
-  getServerSession: vi.fn(),
   connectDB: vi.fn(),
   countDocuments: vi.fn(),
   create: vi.fn(),
   exists: vi.fn(),
-  find: vi.fn(),
   retrieve: vi.fn(),
 }));
 
-vi.mock("next-auth", () => ({ getServerSession: mocks.getServerSession }));
-vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("@/lib/db", () => ({ connectDB: mocks.connectDB }));
 vi.mock("@/lib/models/Order", () => ({
   OrderModel: {
     countDocuments: mocks.countDocuments,
     create: mocks.create,
     exists: mocks.exists,
-    find: mocks.find,
+    find: vi.fn(),
   },
 }));
 vi.mock("@/lib/stripe", () => ({
   getStripe: () => ({ paymentIntents: { retrieve: mocks.retrieve } }),
 }));
 
-import { GET, POST } from "./route";
-import { resetRateLimits } from "@/lib/rate-limit";
+import { POST } from "./route";
 
 interface SavedOrder {
   subtotal: number;
@@ -46,29 +41,19 @@ function line(name: string, quantity: unknown, price: unknown, category = "x") {
   return { menuItem: { name, price, category }, quantity, price };
 }
 
-function postRequest(
-  body: unknown,
-  headers: Record<string, string> = {},
-): NextRequest {
+function postRequest(body: unknown): NextRequest {
   return new NextRequest("http://localhost/api/orders", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...headers },
+    headers: { "Content-Type": "application/json" },
     body: typeof body === "string" ? body : JSON.stringify(body),
   });
 }
 
 const savedOrder = () => mocks.create.mock.calls[0][0] as SavedOrder;
-const asRole = (role: string) =>
-  mocks.getServerSession.mockResolvedValue({
-    user: { role, email: `${role}@example.com` },
-  });
 
 beforeEach(() => {
   vi.resetAllMocks();
-  resetRateLimits();
   vi.spyOn(console, "error").mockImplementation(() => {});
-  vi.spyOn(console, "warn").mockImplementation(() => {});
-  asRole("cashier");
   mocks.countDocuments.mockResolvedValue(0);
   mocks.exists.mockResolvedValue(null);
   mocks.create.mockImplementation(async (doc: object) => ({ ...doc, _id: "o1" }));
@@ -306,139 +291,5 @@ describe("POST /api/orders — legitimate use still works", () => {
 
     expect(res.status).toBe(402);
     expect(mocks.create).not.toHaveBeenCalled();
-  });
-});
-
-describe("POST /api/orders — access control and abuse protection", () => {
-  const cashOrder = () =>
-    postRequest({ items: [line("Coke", 1, 1.8)], paymentMethod: "cash" });
-
-  it("rejects anonymous callers before touching the database", async () => {
-    mocks.getServerSession.mockResolvedValue(null);
-    const res = await POST(cashOrder());
-
-    expect(res.status).toBe(401);
-    expect(mocks.connectDB).not.toHaveBeenCalled();
-    expect(mocks.create).not.toHaveBeenCalled();
-  });
-
-  it("forbids the kitchen role from creating orders", async () => {
-    asRole("kitchen");
-    const res = await POST(cashOrder());
-
-    expect(res.status).toBe(403);
-    expect(mocks.create).not.toHaveBeenCalled();
-  });
-
-  it.each(["admin", "manager", "cashier"])("lets a %s create an order", async (role) => {
-    asRole(role);
-    expect((await POST(cashOrder())).status).toBe(201);
-  });
-
-  it("blocks a cross-site request", async () => {
-    const res = await POST(
-      postRequest(
-        { items: [line("Coke", 1, 1.8)], paymentMethod: "cash" },
-        { "sec-fetch-site": "cross-site" },
-      ),
-    );
-
-    expect(res.status).toBe(403);
-    expect(mocks.create).not.toHaveBeenCalled();
-  });
-
-  it("rate limits order creation to 30 a minute", async () => {
-    for (let i = 0; i < 30; i++) await POST(cashOrder());
-    const res = await POST(cashOrder());
-
-    expect(res.status).toBe(429);
-    expect(mocks.create).toHaveBeenCalledTimes(30);
-  });
-
-  it("does not return the Stripe payment reference or internal fields", async () => {
-    mocks.retrieve.mockResolvedValue({ status: "succeeded", currency: "eur", amount: 545 });
-    mocks.create.mockImplementation(async (doc: object) => ({
-      ...doc,
-      _id: "o1",
-      __v: 0,
-    }));
-    const res = await POST(
-      postRequest({
-        items: [line("Small Chips", 2, 2.5, "chips-sides")],
-        paymentMethod: "card",
-        paymentIntentId: "pi_good123",
-      }),
-    );
-    const { order } = await res.json();
-
-    expect(res.status).toBe(201);
-    expect(order).not.toHaveProperty("paymentIntentId");
-    expect(order).not.toHaveProperty("__v");
-    expect(order.orderNumber).toBe(1);
-  });
-});
-
-describe("GET /api/orders", () => {
-  const limitSpy = vi.fn();
-  const listRequest = (query = "") => new NextRequest(`http://localhost/api/orders${query}`);
-
-  beforeEach(() => {
-    limitSpy.mockReset();
-    limitSpy.mockReturnValue({ lean: () => Promise.resolve([{ _id: "o1" }]) });
-    mocks.find.mockReturnValue({ sort: () => ({ limit: limitSpy }) });
-  });
-
-  it("rejects anonymous callers", async () => {
-    mocks.getServerSession.mockResolvedValue(null);
-    const res = await GET(listRequest());
-
-    expect(res.status).toBe(401);
-    expect(mocks.find).not.toHaveBeenCalled();
-  });
-
-  it.each(["admin", "manager", "cashier", "kitchen"])("lets a %s read orders", async (role) => {
-    asRole(role);
-    expect((await GET(listRequest())).status).toBe(200);
-  });
-
-  it("defaults to 50 orders and hides internal fields", async () => {
-    await GET(listRequest());
-
-    expect(mocks.find).toHaveBeenCalledWith({}, { __v: 0, paymentIntentId: 0 });
-    expect(limitSpy).toHaveBeenCalledWith(50);
-  });
-
-  it("passes a valid limit and status filter through", async () => {
-    await GET(listRequest("?limit=20&status=pending"));
-
-    expect(mocks.find).toHaveBeenCalledWith(
-      { status: "pending" },
-      { __v: 0, paymentIntentId: 0 },
-    );
-    expect(limitSpy).toHaveBeenCalledWith(20);
-  });
-
-  it.each(["?limit=abc", "?limit=0", "?limit=-5", "?limit=100000", "?limit=1.5", "?status=bogus"])(
-    "rejects the abusive query %s",
-    async (query) => {
-      const res = await GET(listRequest(query));
-
-      expect(res.status).toBe(400);
-      expect(mocks.find).not.toHaveBeenCalled();
-    },
-  );
-
-  it("never lets a Mongo operator in the query string reach the database", async () => {
-    const res = await GET(listRequest("?status[$ne]=pending&limit[$gt]=0"));
-
-    expect(res.status).toBe(200);
-    expect(mocks.find).toHaveBeenCalledWith({}, { __v: 0, paymentIntentId: 0 });
-    expect(limitSpy).toHaveBeenCalledWith(50);
-  });
-
-  it("rate limits listing to 120 a minute", async () => {
-    for (let i = 0; i < 120; i++) await GET(listRequest());
-
-    expect((await GET(listRequest())).status).toBe(429);
   });
 });

@@ -5,10 +5,6 @@ import { useState } from "react";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Logo } from "@/components/shared/Logo";
 
-// Must match the server-side flag in src/lib/auth.ts. Read directly here so the
-// browser bundle doesn't pull in server-only auth code.
-const DEMO_LOGIN_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEMO_LOGIN === "true";
-
 const DEMO_ROLES = [
   {
     role: "admin",
@@ -103,8 +99,6 @@ export default function LoginPage() {
           {loading === "google" ? "Signing in..." : "Continue with Google"}
         </button>
 
-        {DEMO_LOGIN_ENABLED && (
-        <>
         <div className="my-6 flex items-center gap-3">
           <div className="h-px flex-1 bg-stone-200 dark:bg-dark-border" />
           <span className="text-xs font-medium text-ink-tertiary dark:text-stone-500">
@@ -138,8 +132,6 @@ export default function LoginPage() {
         <p className="m-6 text-center text-xs text-ink-tertiary dark:text-stone-600">
           Demo accounts require no setup · Google login saves your account
         </p>
-        </>
-        )}
       </div>
     </div>
   );

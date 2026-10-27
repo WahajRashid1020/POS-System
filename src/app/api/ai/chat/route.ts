@@ -3,27 +3,12 @@ import { connectDB } from "@/lib/db";
 import { OrderModel } from "@/lib/models/Order";
 import { askGemini } from "@/lib/gemini";
 import { requireRole } from "@/lib/api-auth";
-import { rejectCrossOrigin } from "@/lib/csrf";
-import { enforceRateLimit } from "@/lib/rate-limit";
 import { chatRequestSchema } from "@/lib/validation";
 
-const ROUTE = "POST /api/ai/chat";
-
 export async function POST(req: NextRequest) {
-  const crossOrigin = rejectCrossOrigin(req, ROUTE);
-  if (crossOrigin) return crossOrigin;
-
   // Sales analytics are manager/admin only — matches the /chat page guard.
-  const auth = await requireRole(["admin", "manager"], ROUTE);
+  const auth = await requireRole(["admin", "manager"]);
   if (!auth.ok) return auth.response;
-
-  // Each call spends Gemini quota, so keep a tight per-user limit.
-  const limited = enforceRateLimit(req, "ai-chat", {
-    limit: 10,
-    windowMs: 60_000,
-    userId: auth.userId,
-  });
-  if (limited) return limited;
 
   try {
     let body: unknown;
