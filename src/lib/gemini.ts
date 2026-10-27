@@ -2,6 +2,24 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
+// Stay under the route's 30s limit so a slow Gemini call fails with a clear
+// message instead of the platform killing the request.
+const GEMINI_TIMEOUT_MS = 25_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(url, { ...init, signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS) });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError")
+    ) {
+      throw new Error("Gemini took too long to respond");
+    }
+    throw error;
+  }
+}
+
 /**
  * `systemInstruction` carries the rules and business data; `prompt` is the
  * untrusted user text. Keeping them in separate fields stops the user's text
@@ -15,7 +33,7 @@ export async function askGemini(
     throw new Error("GEMINI_API_KEY not set in environment");
   }
 
-  const res = await fetch(GEMINI_URL, {
+  const res = await fetchWithTimeout(GEMINI_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
