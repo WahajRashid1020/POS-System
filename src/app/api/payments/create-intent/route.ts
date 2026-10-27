@@ -1,24 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { computeOrderTotals, toCents } from "@/lib/pricing";
-import type { CreateOrderItemInput } from "@/types";
+import { priceOrderItems } from "@/lib/catalog";
 
 // POST /api/payments/create-intent
-// Creates a Stripe PaymentIntent for the current cart. The amount is computed
-// on the server from the submitted items — the client never dictates the price.
+// Creates a Stripe PaymentIntent for the current cart. The client only says
+// which items and how many; every price comes from the server-side menu.
 export async function POST(req: NextRequest) {
+  let body: unknown;
   try {
-    const body = await req.json();
-    const items = (body?.items ?? []) as CreateOrderItemInput[];
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-    if (!Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: "Order must have at least one item" },
-        { status: 400 },
-      );
-    }
+  const rawItems =
+    typeof body === "object" && body !== null && "items" in body
+      ? body.items
+      : undefined;
 
-    const { total } = computeOrderTotals(items);
+  const priced = priceOrderItems(rawItems);
+  if (!priced.ok) {
+    return NextResponse.json({ error: priced.error }, { status: 400 });
+  }
+
+  try {
+    const { total } = computeOrderTotals(priced.items);
     const amount = toCents(total);
 
     if (amount <= 0) {

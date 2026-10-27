@@ -1,53 +1,62 @@
 # CI/CD — Interview Prep (QuickServe POS)
 
-How to talk about CI/CD for this project honestly and confidently.
+How to talk about CI/CD for this project accurately and confidently.
 
-> **Status check before the interview:** the CI workflow below is designed
-> but NOT yet committed to the repo (there is no `.github/` folder on GitHub
-> and no Actions runs). Either commit it first, or use the "current state"
-> wording in Part 1. Never say "my pipeline runs..." unless it does.
+## What is actually live (verified on GitHub)
+
+| Piece | State |
+|---|---|
+| CI | GitHub Actions workflow `.github/workflows/ci.yml`, job `verify`, green on `main` |
+| What CI runs | `npm ci --legacy-peer-deps`, `npx vitest run` (24 tests), `npx tsc --noEmit` (strict), `npm run build` |
+| Triggers | Every push to `main` and every pull request |
+| CD | Vercel deploys automatically from the GitHub repo (`vercel[bot]` Production deployments, Vercel status `success`) |
+| Branch ruleset | `protect-main` is active: PR required, no deletion, no force-push, 0 required approvals |
+| Required status check | **Not required.** CI reports pass/fail but does not block a merge or a deploy |
+| Known gaps | Lint is broken, Stripe webhook route has no tests, no component or E2E tests |
+
+Do not claim that CI blocks bad deploys. It doesn't: Vercel deploys from
+`main` in parallel with `verify`.
 
 ---
 
 ## Part 1 — The interview answers
 
-### The 45-second answer (say it in your own words)
+### The 45-second answer
 
-> "I treat CI/CD as two separate jobs. CI answers 'is this change safe?' and
-> CD answers 'get it live'. For QuickServe, CI is a GitHub Actions workflow
-> that runs on every push and pull request: it installs from the lockfile,
-> runs the Vitest suite, type-checks with strict TypeScript, and does a full
-> production build. Branch protection on `main` blocks the merge if any step
-> is red. CD I leave to Vercel, which deploys from the same GitHub repo, so I
-> don't maintain deploy scripts. The reason I care is the Stripe payment
-> flow: money code shouldn't reach `main` unchecked. The next thing I'd add
-> is tests for the Stripe webhook route and lint in the pipeline."
-
-### If your CI is not committed yet — the honest version
-
-> "Today my safety net is local plus Vercel's build: Vitest runs
-> automatically before the dev server starts via a `predev` script, strict
-> TypeScript catches type errors, and Vercel's build fails on compile
-> errors. I've designed the GitHub Actions workflow — test, type-check,
-> build on every PR with branch protection — and it's the next thing I'm
-> committing, because with payments in the app I don't want to rely on
-> remembering to run checks."
+> "I treat CI and CD as two jobs. CI asks 'is this change safe?' and CD asks
+> 'get it live.' CI is a GitHub Actions workflow that runs on every push and
+> pull request: it installs from the lockfile, runs 24 Vitest unit tests,
+> type-checks with strict TypeScript, and does a full production build.
+> Vercel handles CD, deploying automatically from the same GitHub repo, so I
+> don't maintain deploy scripts. It's deliberately lightweight for a solo
+> project. The next thing I'd add is making the CI check required so a
+> failing build can't ship, plus tests for the Stripe webhook route, because
+> that handles money and currently has none."
 
 ### The 2-minute answer (if they ask "walk me through it")
 
 1. **Trigger:** every push to `main` and every pull request.
-2. **Install:** `npm ci` — installs exactly what the lockfile says, fails if
-   `package.json` and the lockfile disagree. Deterministic.
-3. **Test:** `npm test` runs 24 Vitest unit tests (pricing and VAT math,
-   cents conversion for Stripe, menu search, and the API data layer) with
-   `fetch` mocked, so they take about a second and need no database.
-4. **Type-check:** `npx tsc --noEmit` with `strict: true`. Cheap and catches
-   a whole class of bugs the tests don't.
-5. **Build:** `npm run build` proves the app actually compiles and every
-   route builds, the same thing production will do.
-6. **Gate:** branch protection requires the check to pass before merge.
-7. **Deploy:** Vercel deploys from GitHub. PRs get preview deployments, and
-   merges to `main` go to production.
+2. **Install:** `npm ci` installs exactly what the lockfile says and fails if
+   `package.json` and the lockfile disagree, so builds are reproducible.
+3. **Test:** 24 Vitest unit tests covering pricing and VAT math, cents
+   conversion for Stripe, menu search, and the API data layer. `fetch` is
+   mocked, so they take about a second and need no database.
+4. **Type-check:** `tsc --noEmit` with `strict: true` fails fast with a
+   precise error.
+5. **Build:** `npm run build` proves every route compiles, the same thing
+   production does.
+6. **Deploy:** Vercel deploys from GitHub on every push to `main`.
+7. **Result:** a green or red `verify` check on every commit and PR.
+
+### The story worth telling (shows the pipeline works)
+
+> "My first CI run failed. Tests and type-check passed, but the build
+> crashed with 'Please define MONGODB_URI', because my database module
+> throws at import time and CI has no `.env` file. My local build had
+> passed because my env files were present. I fixed it by giving the build
+> step dummy environment values in the workflow, since the build never
+> connects to a database, rather than touching the app code. That's exactly
+> the kind of 'works on my machine' problem CI exists to catch."
 
 ---
 
@@ -57,117 +66,106 @@ How to talk about CI/CD for this project honestly and confidently.
 
 **A.** CI (continuous integration) automatically verifies every change:
 tests, type-check, build. CD (continuous delivery/deployment) automatically
-ships a verified change. I keep them separate: GitHub Actions does CI,
-Vercel does CD. That way a broken change is stopped before the deploy step
-even starts.
+ships a change. I use GitHub Actions for CI and Vercel for CD.
 
-### Q2. Why GitHub Actions?
+### Q2. Does your CI block bad code from being deployed?
 
-**A.** The code already lives on GitHub, so there's no extra service,
-account, or webhook to manage. Workflows are a single YAML file in the repo,
-so the pipeline is version-controlled and reviewed like any other code, and
-it's free for a project this size.
+**A.** No, and I'd rather say that plainly. Vercel deploys from `main` on
+its own, in parallel with my CI job, and I haven't made the CI check a
+required status check. So CI tells me quickly whether a change is good, but
+it isn't a gate. For a solo project I accepted that tradeoff. With a team or
+real customers I'd mark `verify` as a required check in the branch ruleset,
+and either deploy only after it passes or rely on Vercel's rollback.
 
-### Q3. Why not build a full pipeline with staging, Docker, E2E, and coverage gates?
+### Q3. Why GitHub Actions?
 
-**A.** Right-sizing. This is an early-stage project with one developer. A
-minimal pipeline (test, type-check, build) catches most real breakage for
-about ten minutes of setup. Staging environments, containers, and coverage
-thresholds add maintenance cost that only pays off with a team or more
-traffic. I'd add them when the project needs them, not before.
+**A.** The code is already on GitHub, so there's no extra service to manage.
+The pipeline is one YAML file in the repo, version-controlled and reviewed
+like code, and free at this scale.
 
-### Q4. Why `npm ci` instead of `npm install`?
+### Q4. Why not a bigger pipeline with staging, Docker, E2E, and coverage gates?
 
-**A.** `npm ci` is deterministic: it installs exactly the versions in
-`package-lock.json` and errors if the lockfile is out of sync. `npm install`
-can silently change the lockfile. In CI you want reproducible builds. I add
+**A.** Right-sizing. One developer and an early-stage project: a minimal
+pipeline catches most real breakage for about ten minutes of setup.
+Staging, containers, and coverage thresholds add maintenance cost that pays
+off with a team or more traffic. I'd add them when the project needs them.
+
+### Q5. Why `npm ci` instead of `npm install`?
+
+**A.** `npm ci` is deterministic: it installs exactly what's in
+`package-lock.json` and errors if the lockfile is out of sync. I add
 `--legacy-peer-deps` because the repo has a pre-existing peer-dependency
-conflict between `eslint` and `eslint-config-next`, which I flagged rather
-than hid.
+conflict between `eslint` and `eslint-config-next`.
 
-### Q5. Why run `tsc --noEmit` when the build already type-checks?
+### Q6. Why run `tsc --noEmit` if the build already type-checks?
 
-**A.** It gives a faster, clearer failure. The type-check step fails in
-seconds with a precise error, instead of failing deep inside a build log.
-Ordering cheap checks first (tests, types) and the expensive one (build)
-last means quick feedback on the common failures.
+**A.** It fails earlier and clearer. Cheap checks (tests, types) run before
+the expensive build, so the common failures give fast, precise feedback.
 
-### Q6. What do you do about secrets in CI?
+### Q7. How do you handle secrets?
 
 **A.** Real secrets (MongoDB URI, Stripe keys, Google OAuth, Gemini key) are
-never in the repo: `.env` and `.env.local` are git-ignored, and only
-`.env.example` with placeholders is committed. My tests mock everything, so
-they need no secrets. If a build step ever needs a variable, I'd add it as a
-GitHub Actions secret or use a dummy value, never commit the real one. For
-production, secrets live in Vercel's environment variables.
+never committed: `.env` and `.env.local` are git-ignored and only
+`.env.example` with placeholders is in the repo. Tests mock everything so
+they need no secrets. The CI build uses clearly fake dummy values. Production
+secrets live in Vercel's environment variables.
 
-### Q7. Your build ran fine locally. Will it pass in CI?
+### Q8. What did you learn from the first failed CI run?
 
-**A.** Not guaranteed, and I'd verify on the first run. My local builds ran
-with `.env` files present, and CI has none. Stripe is initialised lazily
-inside a getter, so it shouldn't need keys at build time, but other modules
-read env vars (for example the MongoDB URI). If the first CI build fails on
-a missing variable, the fix is to supply a dummy value in the workflow's
-`env:` block, not a real secret.
+**A.** That local success proves less than it seems. My build passed locally
+only because my `.env` files existed. CI starts from a clean checkout, so it
+exposed an import-time dependency on `MONGODB_URI`. I fixed it in the
+workflow with dummy values. A further improvement would be making that
+module fail lazily instead of at import, which I'd only do with care because
+it sits near auth code.
 
-### Q8. How do you stop a broken change reaching production?
-
-**A.** Three layers:
-1. Locally, a `predev` script runs the tests before the dev server starts.
-2. On every PR, CI runs tests, type-check, and build.
-3. Branch protection on `main` requires that check to pass, so a red build
-   can't be merged, and Vercel only deploys what lands on `main`.
-
-### Q9. How would you handle a bad deploy that gets through anyway?
+### Q9. How would you handle a bad deploy that gets through?
 
 **A.** Vercel keeps every previous deployment, so rollback is promoting the
-last good one, which takes seconds and needs no code change. After that I'd
-write a failing test that reproduces the bug before fixing it, so the same
-regression can't ship twice.
+last good one, which takes seconds. Then I'd write a failing test that
+reproduces the bug before fixing it, so it can't ship twice.
 
-### Q10. Why is lint missing from your pipeline?
+### Q10. Why is lint missing from the pipeline?
 
-**A.** Because it's currently broken and I'd rather be upfront than hide it.
-Next.js 16 removed the `next lint` subcommand, and the repo has no ESLint
-config, so `npm run lint` fails before checking anything. Adding it would
-make every CI run red for a reason unrelated to the change. The right order
-is: migrate to the ESLint CLI with a proper config, confirm it passes
-locally, then add it to the pipeline.
+**A.** It's currently broken, and I'd rather be upfront. Next.js 16 removed
+the `next lint` subcommand and the repo has no ESLint config, so
+`npm run lint` fails before checking anything. Adding it would make every run
+red for an unrelated reason. The order is: migrate to the ESLint CLI with a
+proper config, confirm it passes locally, then add it to CI.
 
-### Q11. How does your pipeline handle the payment code specifically?
+### Q11. How does the pipeline cover payment code?
 
 **A.** The pure payment logic (order totals, VAT, converting to cents) has
 unit tests, including a floating-point-drift case, so a rounding bug fails CI
-instead of charging the wrong amount. The Stripe webhook route doesn't have
-tests yet. That's the highest-value gap, because it handles money and
-signature verification, and it's the first thing I'd cover next.
+instead of charging the wrong amount. The Stripe webhook route has no tests
+yet. That's my highest-value gap because it handles money and signature
+verification.
 
 ### Q12. What would you add next, in priority order?
 
 **A.**
-1. Commit the workflow and turn on branch protection (if not already done).
+1. Make the `verify` check required in the branch ruleset so a red build
+   can't merge.
 2. Tests for the Stripe webhook route: bad signature rejected, valid event
    handled, duplicate events not processed twice.
-3. Fix the lint setup and add it to the pipeline.
-4. Component tests with React Testing Library for the cart and checkout.
-5. A small Playwright smoke test (login, add item, place order) run against
-   the Vercel preview URL, for end-to-end confidence.
+3. Fix lint and add it to the pipeline.
+4. Component tests (React Testing Library) for cart and checkout.
+5. A small Playwright smoke test (login, add item, place order) against the
+   Vercel preview URL.
 
-### Q13. How did AI tooling fit into this?
+### Q13. How does AI tooling fit into this?
 
-**A.** I use an AI coding agent for the setup work but keep the judgment
-myself. For example, when the project had no test runner, the agent flagged
-that my "tests must pass" rule couldn't be satisfied, I decided to add
-Vitest, and it built the config, wrote the tests, and ran tests, type-check,
-and a production build before reporting done. I verify against the actual
-repo state, for instance checking GitHub directly to confirm what CI
-exists, rather than trusting a summary.
+**A.** I use an AI coding agent for setup work and keep the judgment myself.
+It built the Vitest setup and the workflow, and when the first CI run failed
+it read the actual GitHub logs to find the cause instead of guessing. I
+check claims against the real repo state, for example confirming through
+GitHub that the check is green and that Vercel is really deploying.
 
 ---
 
-## Part 3 — The workflow file
+## Part 3 — The workflow (as committed)
 
-Save as `.github/workflows/ci.yml`:
+`.github/workflows/ci.yml`:
 
 ```yaml
 name: CI
@@ -197,27 +195,23 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Unit tests
-        run: npm test
+        run: npx vitest run
 
       - name: Type check
         run: npx tsc --noEmit
 
       - name: Build
         run: npm run build
-        # If this fails on a missing env var, add dummy values here, e.g.
-        # env:
-        #   MONGODB_URI: mongodb://localhost:27017/ci
-        #   NEXTAUTH_SECRET: ci-dummy-secret
+        env:
+          # Dummy values so modules that read env at import time can load.
+          # The build never connects to a database.
+          MONGODB_URI: mongodb://localhost:27017/ci
+          NEXTAUTH_SECRET: ci-dummy-secret
+          NEXTAUTH_URL: http://localhost:3000
 ```
 
-Why the extras: `concurrency` cancels superseded runs on the same branch, and
+`concurrency` cancels superseded runs on the same branch, and
 `timeout-minutes` stops a hung job from burning minutes.
-
-### Turn on branch protection
-
-GitHub repo, then Settings, Branches, Add rule for `main`:
-- Require a pull request before merging
-- Require status checks to pass, and select `verify`
 
 ---
 
@@ -225,10 +219,10 @@ GitHub repo, then Settings, Branches, Add rule for `main`:
 
 | Question | One-liner |
 |---|---|
-| Tools | GitHub Actions (CI), Vercel (CD), Vitest, TypeScript strict |
-| What runs | `npm ci`, `npm test`, `tsc --noEmit`, `npm run build` |
+| Tools | GitHub Actions (CI), Vercel (CD), Vitest, strict TypeScript |
+| What runs | `npm ci`, `vitest run`, `tsc --noEmit`, `npm run build` |
 | When | Every push to `main`, every PR |
-| What blocks a merge | Any red step, via branch protection |
-| Secrets | Never in repo; Vercel env vars for prod; tests mock everything |
-| Known gap | Lint broken (Next 16 dropped `next lint`, no ESLint config) |
-| Next addition | Stripe webhook tests, then lint, then component and E2E tests |
+| Does it block deploys | No. CI is informational; Vercel deploys in parallel |
+| Secrets | Never in repo; Vercel env vars for prod; dummy values in CI build |
+| Known gaps | Lint broken, webhook untested, no component or E2E tests |
+| Next addition | Required check, Stripe webhook tests, lint, component tests |

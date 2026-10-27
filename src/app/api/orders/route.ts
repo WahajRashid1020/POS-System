@@ -3,7 +3,8 @@ import { connectDB } from "@/lib/db";
 import { OrderModel } from "@/lib/models/Order";
 import { getStripe } from "@/lib/stripe";
 import { computeOrderTotals, toCents } from "@/lib/pricing";
-import type { CreateOrderInput } from "@/types";
+import { priceOrderItems } from "@/lib/catalog";
+import { createOrderMetaSchema } from "@/lib/validation";
 
 // GET /api/orders - list orders with optional status filter
 export async function GET(req: NextRequest) {
@@ -33,21 +34,33 @@ export async function GET(req: NextRequest) {
 // POST /api/orders - create new order
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
-
-    const body = (await req.json()) as CreateOrderInput;
-    const { items, type, customerName, notes, paymentMethod, paymentIntentId } =
-      body;
-
-    if (!items || items.length === 0) {
-      return NextResponse.json(
-        { error: "Order must have at least one item" },
-        { status: 400 }
-      );
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+    if (typeof body !== "object" || body === null) {
+      return NextResponse.json({ error: "Invalid order" }, { status: 400 });
     }
 
-    // Totals are computed server-side from the submitted items — never trusted
-    // from the client — so they always match what was (or will be) charged.
+    // The client says which items and how many; prices and categories come
+    // from the server-side menu, so a tampered price can never be charged.
+    const priced = priceOrderItems("items" in body ? body.items : undefined);
+    if (!priced.ok) {
+      return NextResponse.json({ error: priced.error }, { status: 400 });
+    }
+    const items = priced.items;
+
+    const meta = createOrderMetaSchema.safeParse(body);
+    if (!meta.success) {
+      return NextResponse.json({ error: "Invalid order" }, { status: 400 });
+    }
+    const { type, customerName, notes, paymentMethod, paymentIntentId } =
+      meta.data;
+
+    await connectDB();
+
     const { subtotal, tax, total } = computeOrderTotals(items);
 
     // For card orders, verify the payment actually succeeded and that Stripe
@@ -58,6 +71,14 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { error: "Card payment reference is missing" },
           { status: 400 }
+        );
+      }
+      // One payment pays for one order — without this, a single successful
+      // charge could be replayed to create unlimited "paid" orders.
+      if (await OrderModel.exists({ paymentIntentId })) {
+        return NextResponse.json(
+          { error: "This payment has already been used for an order" },
+          { status: 409 }
         );
       }
       const intent = await getStripe().paymentIntents.retrieve(paymentIntentId);

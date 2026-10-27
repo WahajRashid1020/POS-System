@@ -2,18 +2,30 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent";
 
-export async function askGemini(prompt: string): Promise<string> {
+/**
+ * `systemInstruction` carries the rules and business data; `prompt` is the
+ * untrusted user text. Keeping them in separate fields stops the user's text
+ * from being read as part of the instructions.
+ */
+export async function askGemini(
+  prompt: string,
+  systemInstruction?: string,
+): Promise<string> {
   if (!GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY not set in environment");
   }
 
-  console.log("Using Gemini key:", GEMINI_API_KEY.slice(0, 8) + "...");
-
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+  const res = await fetch(GEMINI_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": GEMINI_API_KEY,
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      ...(systemInstruction
+        ? { systemInstruction: { parts: [{ text: systemInstruction }] } }
+        : {}),
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 1024,
@@ -22,10 +34,9 @@ export async function askGemini(prompt: string): Promise<string> {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    console.error("Gemini API status:", res.status);
-    console.error("Gemini API error:", err);
-    throw new Error(`Gemini API error (${res.status}): ${err}`);
+    // Details stay in server logs only; callers get the status code, nothing more.
+    console.error("Gemini API error:", res.status, await res.text());
+    throw new Error(`Gemini API error (${res.status})`);
   }
 
   const data = await res.json();
