@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { OrderModel } from "@/lib/models/Order";
+import { requireRole } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
+  // Sales reports are manager/admin only — matches the /reports page guard.
+  const auth = await requireRole(["admin", "manager"], "GET /api/reports");
+  if (!auth.ok) return auth.response;
+
   try {
     await connectDB();
 
