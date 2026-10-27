@@ -115,3 +115,31 @@ describe("askGemini — request shape", () => {
     await expect(askGemini("hello")).resolves.toBe("hi");
   });
 });
+
+describe("askGemini — slow responses", () => {
+  it("gives up with a clear message instead of hanging", async () => {
+    const { askGemini } = await loadGemini();
+    const timeout = Object.assign(new Error("signal timed out"), { name: "TimeoutError" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(timeout));
+
+    await expect(askGemini("hello")).rejects.toThrow("Gemini took too long to respond");
+  });
+
+  it("sends an abort signal so the request can be cut off", async () => {
+    const { askGemini } = await loadGemini();
+    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await askGemini("hello");
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("still surfaces other network errors unchanged", async () => {
+    const { askGemini } = await loadGemini();
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+    await expect(askGemini("hello")).rejects.toThrow("network down");
+  });
+});

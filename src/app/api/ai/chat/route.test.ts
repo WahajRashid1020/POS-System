@@ -122,3 +122,42 @@ describe("POST /api/ai/chat — legitimate use still works", () => {
     expect(mocks.askGemini.mock.calls[0][0]).toBe("how are sales?");
   });
 });
+
+describe("POST /api/ai/chat — speed and correctness of the sales data", () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const order = (createdAt: Date, total: number) => ({
+    createdAt,
+    total,
+    type: "dine-in",
+    paymentMethod: "cash",
+    items: [{ menuItem: { name: "Coke", category: "drinks" }, quantity: 1, price: total }],
+  });
+
+  it("reads the database once and still splits today / week / month correctly", async () => {
+    asRole("manager");
+    const now = Date.now();
+    mocks.find.mockReturnValue({
+      lean: () =>
+        Promise.resolve([
+          order(new Date(now), 10),
+          order(new Date(now - 3 * DAY), 20),
+          order(new Date(now - 20 * DAY), 30),
+        ]),
+    });
+
+    const res = await POST(chatRequest({ message: "how are sales?" }));
+    const [, system] = mocks.askGemini.mock.calls[0] as [string, string];
+
+    expect(res.status).toBe(200);
+    expect(mocks.find).toHaveBeenCalledTimes(1);
+    expect(system).toMatch(/TODAY'S DATA ===\s*Total Orders: 1\s*Total Revenue: €10\.00/);
+    expect(system).toMatch(/THIS WEEK'S DATA ===\s*Total Orders: 2\s*Total Revenue: €30\.00/);
+    expect(system).toMatch(/THIS MONTH'S DATA ===\s*Total Orders: 3\s*Total Revenue: €60\.00/);
+  });
+
+  it("allows up to 30 seconds so Gemini has time to answer on serverless", async () => {
+    const mod = await import("./route");
+
+    expect(mod.maxDuration).toBe(30);
+  });
+});

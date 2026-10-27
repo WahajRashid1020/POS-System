@@ -5,6 +5,9 @@ import { askGemini } from "@/lib/gemini";
 import { requireRole } from "@/lib/api-auth";
 import { chatRequestSchema } from "@/lib/validation";
 
+// Gemini plus the database can take longer than the 10s serverless default.
+export const maxDuration = 30;
+
 export async function POST(req: NextRequest) {
   // Sales analytics are manager/admin only — matches the /chat page guard.
   const auth = await requireRole(["admin", "manager"]);
@@ -47,23 +50,17 @@ export async function POST(req: NextRequest) {
       now.getDate(),
     );
 
-    // Today's orders
-    const todayOrders = await OrderModel.find({
-      createdAt: { $gte: todayStart },
-      status: { $nin: ["cancelled"] },
-    }).lean();
-
-    // This week's orders
-    const weekOrders = await OrderModel.find({
-      createdAt: { $gte: weekStart },
-      status: { $nin: ["cancelled"] },
-    }).lean();
-
-    // This month's orders
+    // One query for the whole month; today and this week are subsets of it,
+    // so filtering in memory saves two round trips to the database.
     const monthOrders = await OrderModel.find({
       createdAt: { $gte: monthStart },
       status: { $nin: ["cancelled"] },
-    }).lean();
+    }).lean<{ createdAt: Date }[]>();
+
+    const since = (start: Date) =>
+      monthOrders.filter((o) => new Date(o.createdAt) >= start);
+    const weekOrders = since(weekStart);
+    const todayOrders = since(todayStart);
 
     // Build stats
     const buildStats = (orders: any[]) => {
