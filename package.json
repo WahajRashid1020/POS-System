@@ -24,7 +24,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
-    "dotenv": "^17.4.1",
+    "dotenv": "^18.0.9",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.378.0",
     "mongoose": "^8.3.0",
