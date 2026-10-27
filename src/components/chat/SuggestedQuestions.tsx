@@ -5,7 +5,7 @@ interface SuggestedQuestionsProps {
 }
 
 const SUGGESTIONS = [
-  { icon: "📊", text: "How are sales doing today?" },
+  { icon: "📊", text: "How are sales doing today ?" },
   { icon: "🏆", text: "What are the top 5 best selling items this week?" },
   { icon: "⏰", text: "What's our busiest hour?" },
   { icon: "💳", text: "Compare cash vs card payments" },
