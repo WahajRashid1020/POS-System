@@ -8,6 +8,7 @@ import { requireRole } from "@/lib/api-auth";
 import { rejectCrossOrigin } from "@/lib/csrf";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { toPublicOrder } from "@/lib/order-response";
+import { isDuplicateKeyError } from "@/lib/db-errors";
 import { createOrderMetaSchema, listOrdersQuerySchema } from "@/lib/validation";
 
 // Everyone on the POS or kitchen screen reads orders; only the POS takes them.
@@ -162,6 +163,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ order: toPublicOrder(order) }, { status: 201 });
   } catch (error) {
+    // Two requests with the same payment raced past the check above; the
+    // unique index on paymentIntentId rejected the second one.
+    if (isDuplicateKeyError(error)) {
+      return NextResponse.json(
+        { error: "This payment has already been used for an order" },
+        { status: 409 }
+      );
+    }
     console.error("POST /api/orders error:", error);
     return NextResponse.json(
       { error: "Failed to create order" },
