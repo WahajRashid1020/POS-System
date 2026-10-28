@@ -442,3 +442,46 @@ describe("GET /api/orders", () => {
     expect((await GET(listRequest())).status).toBe(429);
   });
 });
+
+describe("POST /api/orders — simultaneous requests with the same payment", () => {
+  const cardOrder = () =>
+    postRequest({
+      items: [line("Small Chips", 2, 2.5, "chips-sides")],
+      paymentMethod: "card",
+      paymentIntentId: "pi_race123",
+    });
+
+  beforeEach(() => {
+    mocks.retrieve.mockResolvedValue({ status: "succeeded", currency: "eur", amount: 545 });
+  });
+
+  it("answers 409 when the unique index rejects the second order", async () => {
+    mocks.create.mockRejectedValue(
+      Object.assign(new Error("E11000 duplicate key error"), { code: 11000 }),
+    );
+    const res = await POST(cardOrder());
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/already been used/i);
+  });
+
+  it("gives the same 409 as the early check, so callers see one behaviour", async () => {
+    mocks.exists.mockResolvedValue({ _id: "earlier" });
+    const early = await POST(cardOrder());
+
+    mocks.exists.mockResolvedValue(null);
+    mocks.create.mockRejectedValue(Object.assign(new Error("dup"), { code: 11000 }));
+    const raced = await POST(cardOrder());
+
+    expect(early.status).toBe(409);
+    expect(raced.status).toBe(409);
+    expect((await raced.json()).error).toBe((await early.json()).error);
+  });
+
+  it("still reports other database errors as 500", async () => {
+    mocks.create.mockRejectedValue(new Error("connection lost"));
+    const res = await POST(cardOrder());
+
+    expect(res.status).toBe(500);
+  });
+});

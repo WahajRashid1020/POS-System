@@ -42,5 +42,17 @@ const OrderSchema = new Schema(
 OrderSchema.index({ status: 1, createdAt: -1 });
 OrderSchema.index({ createdAt: -1 });
 
+// One Stripe payment can pay for only one order. The check in the orders route
+// gives a friendly early answer; this index closes the race between two
+// simultaneous requests. Partial, so cash orders (no payment id) are not
+// treated as duplicates of each other.
+OrderSchema.index(
+  { paymentIntentId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { paymentIntentId: { $type: "string" } },
+  },
+);
+
 export const OrderModel =
   models.Order || mongoose.model("Order", OrderSchema);
